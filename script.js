@@ -1,4 +1,4 @@
-// --- STrackerX v0.2.0 Cloud Engine ---
+// --- STrackerX v0.2.0 Engine ---
 const SUPABASE_URL = "https://hndzaifthicnvaahhrxf.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_5fOfHVlm1U4DbVhSkyn1zQ_a6ss3Jwm"; 
 
@@ -48,7 +48,6 @@ function playTick(freq = 480) {
     } catch (e) {}
 }
 
-// 15+ Motivational Directives
 const MOTIVATIONAL_QUOTES = [
     "Small disciplines repeated with consistency every day lead to great achievements.",
     "Action cures anxiety. Open the book and take the first step.",
@@ -67,7 +66,6 @@ const MOTIVATIONAL_QUOTES = [
     "You don't need motivation when you build iron habits."
 ];
 
-// Curricula Matrix with English, SST & Languages
 const OFFICIAL_CHAPTERS = {
     "Class 11": {
         "Physics": [
@@ -277,7 +275,6 @@ function buildTrackData(track, existingData) {
     return output;
 }
 
-// Boot App
 async function bootApp() {
     const savedTheme = getSyncStorage('stracker_theme', 'dark');
     document.documentElement.setAttribute('data-theme', savedTheme);
@@ -294,6 +291,7 @@ async function bootApp() {
     }
 
     userProfile = getSyncStorage('stracker_profile', null);
+    activeSquadCode = getSyncStorage('stracker_active_squad', null);
 
     if (!currentUserSession && !userProfile) {
         const overlay = document.getElementById('auth-overlay');
@@ -317,7 +315,6 @@ function rotateMotivation() {
     }
 }
 
-// Auth Logic
 function setAuthMode(mode) {
     authMode = mode;
     const loginTab = document.getElementById('tab-login');
@@ -755,7 +752,6 @@ function toggleTheme() {
     playTick(500);
 }
 
-// Sprint Timer & Dynamic Streak Engine
 let sprintTime = 25 * 60;
 let timerId = null;
 
@@ -820,7 +816,7 @@ function toggleTimer() {
                 playTick(880);
                 if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
                 recordSprintStreak();
-                alert('🎯 Focus Sprint Completed! Great job! Study streak updated.');
+                alert('🎯 Focus Sprint Completed! Study streak updated.');
             }
         }, 1000);
     }
@@ -846,7 +842,7 @@ async function checkAndRenderSocial() {
     if (!supabaseClient || !userProfile?.id) return;
 
     try {
-        // Render Incoming Requests
+        // 1. Incoming Requests
         const { data: requests } = await supabaseClient
             .from('friendships')
             .select(`
@@ -881,30 +877,37 @@ async function checkAndRenderSocial() {
             }
         }
 
-        // Render Accepted Friends
-        const { data: friendsList } = await supabaseClient
+        // 2. Accepted Friends (Bidirectional Query)
+        const { data: sentAccepted } = await supabaseClient
             .from('friendships')
-            .select(`
-                id,
-                sender_id,
-                receiver_id,
-                sender:sender_id(id, username, full_name),
-                receiver:receiver_id(id, username, full_name)
-            `)
-            .eq('status', 'accepted')
-            .or(`sender_id.eq.${userProfile.id},receiver_id.eq.${userProfile.id}`);
+            .select(`id, receiver:receiver_id(id, username, full_name)`)
+            .eq('sender_id', userProfile.id)
+            .eq('status', 'accepted');
+
+        const { data: receivedAccepted } = await supabaseClient
+            .from('friendships')
+            .select(`id, sender:sender_id(id, username, full_name)`)
+            .eq('receiver_id', userProfile.id)
+            .eq('status', 'accepted');
+
+        const friendsList = [];
+        if (sentAccepted) {
+            sentAccepted.forEach(item => { if (item.receiver) friendsList.push(item.receiver); });
+        }
+        if (receivedAccepted) {
+            receivedAccepted.forEach(item => { if (item.sender) friendsList.push(item.sender); });
+        }
 
         const friendsContainer = document.getElementById('friends-list-container');
         const homePeerStatus = document.getElementById('home-peer-status');
         const homeFriendsStat = document.getElementById('home-friends-stat');
 
-        if (friendsContainer && friendsList) {
-            const accepted = friendsList.map(f => f.sender_id === userProfile.id ? f.receiver : f.sender);
-            if (homeFriendsStat) homeFriendsStat.textContent = `${accepted.length} Connected`;
+        if (friendsContainer) {
+            if (homeFriendsStat) homeFriendsStat.textContent = `${friendsList.length} Connected`;
 
-            if (accepted.length > 0) {
+            if (friendsList.length > 0) {
                 friendsContainer.innerHTML = '';
-                accepted.forEach(fr => {
+                friendsList.forEach(fr => {
                     const card = document.createElement('div');
                     card.className = 'squad-card glass-panel';
                     card.innerHTML = `
@@ -916,7 +919,7 @@ async function checkAndRenderSocial() {
                     `;
                     friendsContainer.appendChild(card);
                 });
-                if (homePeerStatus) homePeerStatus.textContent = `${accepted.length} friend(s) in your study circle. Keep the momentum going!`;
+                if (homePeerStatus) homePeerStatus.textContent = `${friendsList.length} friend(s) in your study circle. Keep pushing forward!`;
             } else {
                 friendsContainer.innerHTML = `
                     <div class="squad-card glass-panel">
@@ -927,6 +930,11 @@ async function checkAndRenderSocial() {
                     </div>
                 `;
             }
+        }
+
+        // 3. Auto-load Active Squad
+        if (activeSquadCode) {
+            fetchAndDisplaySquad(activeSquadCode);
         }
     } catch (e) {
         console.warn("Social render error:", e);
@@ -996,9 +1004,9 @@ async function handleCreateSquad() {
         return;
     }
 
-    const code = `#SQUAD-${Math.floor(1000 + Math.random() * 9000)}`;
+    const rawCode = `SQUAD-${Math.floor(1000 + Math.random() * 9000)}`;
     const { error } = await supabaseClient.from('squad_rooms').insert({
-        room_code: code,
+        room_code: rawCode,
         created_by: userProfile.id,
         members: [{ id: userProfile.id, handle: userProfile.handle, name: userProfile.name }]
     });
@@ -1008,14 +1016,17 @@ async function handleCreateSquad() {
         return;
     }
 
-    activeSquadCode = code;
-    displayActiveSquad(code, [{ handle: userProfile.handle, name: userProfile.name }]);
-    alert(`Squad created: ${code}\nShare this code with your study squad!`);
+    activeSquadCode = rawCode;
+    setSyncStorage('stracker_active_squad', activeSquadCode);
+    fetchAndDisplaySquad(rawCode);
+    alert(`Squad created: #${rawCode}\nShare this code with your peers!`);
 }
 
 async function handleJoinSquad() {
     const input = document.getElementById('join-squad-input');
-    const code = input ? input.value.trim().toUpperCase() : '';
+    let code = input ? input.value.trim().toUpperCase() : '';
+    code = code.replace(/^#/, '');
+
     if (!code) {
         alert("Please enter a room code.");
         return;
@@ -1030,7 +1041,7 @@ async function handleJoinSquad() {
         .single();
 
     if (error || !squad) {
-        alert("Squad room not found.");
+        alert(`Squad "${code}" not found. Verify the code.`);
         return;
     }
 
@@ -1044,8 +1055,23 @@ async function handleJoinSquad() {
     }
 
     activeSquadCode = code;
+    setSyncStorage('stracker_active_squad', activeSquadCode);
     displayActiveSquad(code, members);
-    alert(`Joined Squad: ${code}!`);
+    if (input) input.value = '';
+    alert(`Joined Squad: #${code}!`);
+}
+
+async function fetchAndDisplaySquad(code) {
+    if (!supabaseClient || !code) return;
+    const { data: squad } = await supabaseClient
+        .from('squad_rooms')
+        .select('*')
+        .eq('room_code', code)
+        .single();
+
+    if (squad) {
+        displayActiveSquad(code, squad.members || []);
+    }
 }
 
 function displayActiveSquad(code, members) {
@@ -1055,7 +1081,7 @@ function displayActiveSquad(code, members) {
     if (!box || !list) return;
 
     box.style.display = 'block';
-    if (title) title.textContent = `ACTIVE SQUAD — ${code}`;
+    if (title) title.textContent = `ACTIVE SQUAD — #${code}`;
 
     list.innerHTML = '';
     members.forEach(m => {
@@ -1073,7 +1099,32 @@ function displayActiveSquad(code, members) {
     });
 }
 
-// In-App Cloud Feedback
+async function handleLeaveSquad() {
+    if (!activeSquadCode || !supabaseClient || !userProfile?.id) return;
+
+    if (!confirm("Are you sure you want to leave this squad?")) return;
+
+    const { data: squad } = await supabaseClient
+        .from('squad_rooms')
+        .select('*')
+        .eq('room_code', activeSquadCode)
+        .single();
+
+    if (squad) {
+        const updatedMembers = (squad.members || []).filter(m => m.id !== userProfile.id);
+        await supabaseClient
+            .from('squad_rooms')
+            .update({ members: updatedMembers })
+            .eq('room_code', activeSquadCode);
+    }
+
+    activeSquadCode = null;
+    localStorage.removeItem('stracker_active_squad');
+    const box = document.getElementById('active-squad-box');
+    if (box) box.style.display = 'none';
+    alert("You have left the squad.");
+}
+
 async function submitFeedback() {
     const typeSelect = document.getElementById('report-type');
     const bodyInput = document.getElementById('report-body');
@@ -1100,7 +1151,6 @@ async function submitFeedback() {
     alert("Feedback received! Thank you for supporting STrackerX.");
 }
 
-// Backup & Cloud Account Wipe
 function exportDataBackup() {
     const blob = new Blob([JSON.stringify({ userProfile, matrixData }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -1138,7 +1188,6 @@ async function promptSecureReset() {
     if (confirmation === 'DELETE') {
         try {
             if (supabaseClient && userProfile?.id) {
-                // Calls RPC to delete directly from auth.users (cascading to profiles)
                 await supabaseClient.rpc('delete_current_user');
                 await supabaseClient.auth.signOut();
             }
