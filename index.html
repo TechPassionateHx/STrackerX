@@ -279,10 +279,13 @@
                 <button type="button" class="btn-ghost btn-full" onclick="handleCreateSquad()">Create New Squad Room</button>
                 
                 <div id="active-squad-box" style="display: none; margin-top: 15px;">
-                    <div class="section-title" id="active-squad-title">ACTIVE SQUAD</div>
-                    <div id="squad-members-list"></div>
-                </div>
-            </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div class="section-title" id="active-squad-title" style="margin: 0;">ACTIVE SQUAD</div>
+        <button type="button" class="btn-ghost" onclick="handleLeaveSquad()" style="padding: 4px 10px; font-size: 0.8rem; color: #ff5555;">LEAVE</button>
+    </div>
+    <div id="squad-members-list"></div>
+</div>
+
 
             <!-- Friends List -->
             <div class="section-title">YOUR STUDY CIRCLE</div>
