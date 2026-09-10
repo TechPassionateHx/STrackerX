@@ -772,3 +772,23 @@ body {
     justify-content: flex-end;
     margin-top: 8px;
 }
+
+/* Optional polish for v0.2.0 social elements */
+#incoming-requests-container .squad-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+#incoming-requests-container button {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    min-width: 36px;
+}
+
+#squad-members-list .squad-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
