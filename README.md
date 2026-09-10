@@ -40,4 +40,8 @@ STrackerX/
 ├── style.css        # Glassmorphic UI styling and theme variables
 ├── script.js        # Cloud sync, milestone matrices, and app logic
 ├── CHANGELOG.md     # Full version history and release notes
-└── README.md        # Project documentation
+└── README.md        # Project documentation'''
+
+##LICENSE
+
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
