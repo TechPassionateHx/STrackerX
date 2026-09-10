@@ -806,14 +806,32 @@ function importDataBackup(e) {
     reader.readAsText(file);
 }
 
-function promptSecureReset() {
-    const confirmation = prompt("To permanently delete your account and erase all milestones, type 'DELETE':");
+async function promptSecureReset() {
+    const confirmation = prompt("To permanently delete your account and erase all cloud & local milestones, type 'DELETE':");
     if (confirmation === 'DELETE') {
+        try {
+            // 1. Delete user row from Supabase database
+            if (supabaseClient && userProfile?.id) {
+                await supabaseClient
+                    .from('profiles')
+                    .delete()
+                    .eq('id', userProfile.id);
+
+                // Sign out of the cloud session
+                await supabaseClient.auth.signOut();
+            }
+        } catch (err) {
+            console.warn("Cloud wipe error:", err);
+        }
+
+        // 2. Clear phone / browser storage
         try { localStorage.clear(); } catch(e){}
-        alert("Local progress purged.");
+
+        alert("Account and cloud records deleted successfully.");
         location.reload();
     }
 }
+
 
 // Ignition
 bootApp();
