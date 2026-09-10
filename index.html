@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>STrackerX ⚡</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- Supabase JS Client & Confetti -->
+    <link rel="stylesheet" href="./style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </head>
@@ -18,21 +17,21 @@
             <p class="subtext" id="auth-sub">Enter your username and password.</p>
             
             <div class="auth-toggle-row">
-                <button class="btn-toggle active" id="tab-login" onclick="setAuthMode('login')">Log In</button>
-                <button class="btn-toggle" id="tab-signup" onclick="setAuthMode('signup')">Create Account</button>
+                <button type="button" class="btn-toggle active" id="tab-login" onclick="setAuthMode('login')">Log In</button>
+                <button type="button" class="btn-toggle" id="tab-signup" onclick="setAuthMode('signup')">Create Account</button>
             </div>
 
-            <label>Username</label>
+            <label for="auth-username">Username</label>
             <input type="text" id="auth-username" placeholder="e.g. sahil_x" autocomplete="username">
 
-            <label>Password</label>
+            <label for="auth-password">Password</label>
             <input type="password" id="auth-password" placeholder="At least 6 characters" autocomplete="current-password">
 
             <div id="signup-extra-fields" style="display: none; flex-direction: column; gap: 10px;">
-                <label>Display Name</label>
+                <label for="auth-name">Display Name</label>
                 <input type="text" id="auth-name" placeholder="e.g. Sahil Raj">
 
-                <label>Academic Track</label>
+                <label for="auth-track">Academic Track</label>
                 <select id="auth-track">
                     <option value="JEE">JEE (Class 11 & 12 PCM)</option>
                     <option value="NEET">NEET (Class 11 & 12 PCB)</option>
@@ -46,7 +45,7 @@
                 </select>
             </div>
 
-            <button class="btn-primary btn-full" id="auth-submit-btn" onclick="handleAuthSubmit()">Continue</button>
+            <button type="button" class="btn-primary btn-full" id="auth-submit-btn" onclick="handleAuthSubmit()">Continue</button>
             <p id="auth-error-msg" class="subtext error-text" style="display: none;"></p>
         </div>
     </div>
@@ -56,12 +55,12 @@
         <div class="modal-card glass-panel modal-scrollable">
             <div class="modal-header-row">
                 <h2>App Guide 📖</h2>
-                <button class="btn-close" onclick="toggleModal('modal-guide', false)">✕</button>
+                <button type="button" class="btn-close" onclick="toggleModal('modal-guide', false)">✕</button>
             </div>
             <div class="guide-content">
                 <div class="guide-item">
                     <h4>Milestone Checklist</h4>
-                    <p>• <strong>Notes:</strong> Class lectures attended & theory notes completed.</p>
+                    <p>• <strong>Notes:</strong> Class lectures attended &amp; theory notes completed.</p>
                     <p>• <strong>Module:</strong> Core textbook or coaching module solved.</p>
                     <p>• <strong>DPPs:</strong> Daily Practice Problems and question sheets solved.</p>
                     <p>• <strong>S-Notes:</strong> One-page formula sheet / short notes created.</p>
@@ -72,11 +71,11 @@
                     <p>25-minute study sprints. Hit start, focus deeply without tab-switching, and build study momentum.</p>
                 </div>
                 <div class="guide-item">
-                    <h4>Cloud & Offline Sync</h4>
+                    <h4>Cloud &amp; Offline Sync</h4>
                     <p>Your progress syncs with Supabase in real-time. If offline, it saves locally and updates once reconnected.</p>
                 </div>
             </div>
-            <button class="btn-primary btn-full" onclick="toggleModal('modal-guide', false)">Close Guide</button>
+            <button type="button" class="btn-primary btn-full" onclick="toggleModal('modal-guide', false)">Close Guide</button>
         </div>
     </div>
 
@@ -85,11 +84,11 @@
         <div class="modal-card glass-panel">
             <div class="modal-header-row">
                 <h2>Send Feedback 💬</h2>
-                <button class="btn-close" onclick="toggleModal('modal-feedback', false)">✕</button>
+                <button type="button" class="btn-close" onclick="toggleModal('modal-feedback', false)">✕</button>
             </div>
             <p class="subtext">Help refine STrackerX. Submissions save directly to the cloud database.</p>
             
-            <label>Category</label>
+            <label for="report-type">Category</label>
             <select id="report-type">
                 <option value="bug">Bug / Execution Issue</option>
                 <option value="syllabus">Syllabus / Chapter Error</option>
@@ -97,12 +96,12 @@
                 <option value="general">General Feedback</option>
             </select>
 
-            <label>Message</label>
+            <label for="report-body">Message</label>
             <textarea id="report-body" rows="4" placeholder="Describe the bug or feature proposal..."></textarea>
 
             <div class="modal-actions">
-                <button class="btn-ghost" onclick="toggleModal('modal-feedback', false)">Cancel</button>
-                <button class="btn-primary" onclick="submitFeedback()">Send</button>
+                <button type="button" class="btn-ghost" onclick="toggleModal('modal-feedback', false)">Cancel</button>
+                <button type="button" class="btn-primary" onclick="submitFeedback()">Send</button>
             </div>
         </div>
     </div>
@@ -113,12 +112,12 @@
             <h2>Add Custom Chapter</h2>
             <p class="subtext" id="add-chapter-context-sub">Targeting current subject</p>
             
-            <label>Chapter Name</label>
+            <label for="custom-chapter-input">Chapter Name</label>
             <input type="text" id="custom-chapter-input" placeholder="e.g., Advanced Fluid Dynamics">
             
             <div class="modal-actions">
-                <button class="btn-ghost" onclick="toggleAddModal(false)">Cancel</button>
-                <button class="btn-primary" onclick="submitCustomChapter()">Add Chapter</button>
+                <button type="button" class="btn-ghost" onclick="toggleAddModal(false)">Cancel</button>
+                <button type="button" class="btn-primary" onclick="submitCustomChapter()">Add Chapter</button>
             </div>
         </div>
     </div>
@@ -131,8 +130,8 @@
         </div>
         
         <div class="top-actions">
-            <button class="theme-toggle-btn" onclick="toggleModal('modal-guide', true)" title="App Guide">❓</button>
-            <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Theme">🌓</button>
+            <button type="button" class="theme-toggle-btn" onclick="toggleModal('modal-guide', true)" title="App Guide">❓</button>
+            <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Theme">🌓</button>
             <div class="user-chip" onclick="switchTab('vault')">
                 <span class="user-avatar" id="avatar-char">U</span>
                 <span class="user-handle" id="header-handle">@user</span>
@@ -163,8 +162,8 @@
                     <span id="timer-display">25:00</span>
                 </div>
                 <div class="focus-controls">
-                    <button id="btn-timer-toggle" onclick="toggleTimer()">START SPRINT</button>
-                    <button onclick="resetTimer()">↺</button>
+                    <button type="button" id="btn-timer-toggle" onclick="toggleTimer()">START SPRINT</button>
+                    <button type="button" onclick="resetTimer()">↺</button>
                 </div>
             </div>
 
@@ -187,7 +186,7 @@
             </div>
 
             <!-- Squad & Peers Status Card -->
-            <div class="section-title">SQUAD & PEERS</div>
+            <div class="section-title">SQUAD &amp; PEERS</div>
             <div class="feed-item glass-panel" id="home-peer-card">
                 <div class="feed-info">
                     <p id="home-peer-status">Add friends by their username to build study consistency together.</p>
@@ -221,7 +220,7 @@
             
             <div class="subject-bar-row">
                 <nav class="subject-tabs" id="subject-tabs"></nav>
-                <button class="btn-add-chapter" onclick="toggleAddModal(true)" title="Add Custom Chapter">➕</button>
+                <button type="button" class="btn-add-chapter" onclick="toggleAddModal(true)" title="Add Custom Chapter">➕</button>
             </div>
 
             <div class="matrix-list" id="matrix-container"></div>
@@ -231,7 +230,7 @@
         <section id="view-friends" class="screen-view">
             <div class="squad-header glass-panel">
                 <div class="squad-title-row">
-                    <h3>FRIENDS & SQUADS</h3>
+                    <h3>FRIENDS &amp; SQUADS</h3>
                     <span class="status-indicator">CLOUD LIVE</span>
                 </div>
                 <p class="subtext">Add study partners by username or join squad rooms.</p>
@@ -242,7 +241,7 @@
                 <h4>Add Friend by Username</h4>
                 <div class="input-inline">
                     <input type="text" id="add-friend-input" placeholder="Enter username (e.g. sahil_x)">
-                    <button class="btn-primary" onclick="handleAddFriend()">Send</button>
+                    <button type="button" class="btn-primary" onclick="handleAddFriend()">Send</button>
                 </div>
             </div>
 
@@ -251,10 +250,10 @@
                 <h4>Squad Room</h4>
                 <div class="input-inline">
                     <input type="text" id="join-squad-input" placeholder="Room code (e.g. #TITANS)">
-                    <button class="btn-primary" onclick="handleJoinSquad()">Join</button>
+                    <button type="button" class="btn-primary" onclick="handleJoinSquad()">Join</button>
                 </div>
                 <div class="divider"><span>OR</span></div>
-                <button class="btn-ghost btn-full" onclick="handleCreateSquad()">Create New Squad Room</button>
+                <button type="button" class="btn-ghost btn-full" onclick="handleCreateSquad()">Create New Squad Room</button>
             </div>
 
             <!-- Friends List -->
@@ -275,7 +274,7 @@
                 <h3>Track Configuration</h3>
                 <p class="subtext">Switch streams without losing milestone progress.</p>
                 <div class="track-switch-box">
-                    <label>Change Stream</label>
+                    <label for="vault-stream-select">Change Stream</label>
                     <select id="vault-stream-select" onchange="handleStreamSwitch(this.value)">
                         <option value="JEE">JEE (11 + 12 PCM)</option>
                         <option value="NEET">NEET (11 + 12 PCB)</option>
@@ -289,19 +288,19 @@
             </div>
 
             <div class="vault-card glass-panel">
-                <h3>Help & Support</h3>
+                <h3>Help &amp; Support</h3>
                 <p class="subtext">Review how to use STrackerX or send your feedback.</p>
                 <div class="btn-group">
-                    <button class="btn-ghost btn-full" onclick="toggleModal('modal-guide', true)">OPEN APP GUIDE</button>
-                    <button class="btn-ghost btn-full" onclick="toggleModal('modal-feedback', true)">SEND FEEDBACK / REPORT</button>
+                    <button type="button" class="btn-ghost btn-full" onclick="toggleModal('modal-guide', true)">OPEN APP GUIDE</button>
+                    <button type="button" class="btn-ghost btn-full" onclick="toggleModal('modal-feedback', true)">SEND FEEDBACK / REPORT</button>
                 </div>
             </div>
 
             <div class="vault-card glass-panel">
-                <h3>Backup & Restore</h3>
+                <h3>Backup &amp; Restore</h3>
                 <p class="subtext">Export local backup JSON or restore onto another device.</p>
                 <div class="btn-group">
-                    <button class="btn-primary btn-full" onclick="exportDataBackup()">EXPORT BACKUP (.JSON)</button>
+                    <button type="button" class="btn-primary btn-full" onclick="exportDataBackup()">EXPORT BACKUP (.JSON)</button>
                     <label class="btn-ghost btn-full file-label">
                         RESTORE BACKUP (.JSON)
                         <input type="file" id="import-file" accept=".json" onchange="importDataBackup(event)" style="display: none;">
@@ -313,8 +312,8 @@
                 <h3>Account Session</h3>
                 <p class="subtext">Sign out or completely delete account from cloud and device.</p>
                 <div class="btn-group">
-                    <button class="btn-ghost btn-full" onclick="handleSignOut()">SIGN OUT</button>
-                    <button class="btn-danger btn-full" onclick="promptSecureReset()">DELETE ACCOUNT & RESET</button>
+                    <button type="button" class="btn-ghost btn-full" onclick="handleSignOut()">SIGN OUT</button>
+                    <button type="button" class="btn-danger btn-full" onclick="promptSecureReset()">DELETE ACCOUNT &amp; RESET</button>
                 </div>
             </div>
         </section>
@@ -322,24 +321,24 @@
 
     <!-- Bottom Navigation Bar -->
     <nav class="bottom-nav glass-panel">
-        <button class="nav-item active" onclick="switchTab('home')">
+        <button type="button" class="nav-item active" onclick="switchTab('home')">
             <span class="nav-icon">🏠</span>
             <span class="nav-label">Hub</span>
         </button>
-        <button class="nav-item" onclick="switchTab('matrix')">
+        <button type="button" class="nav-item" onclick="switchTab('matrix')">
             <span class="nav-icon">📊</span>
             <span class="nav-label">Matrix</span>
         </button>
-        <button class="nav-item" onclick="switchTab('friends')">
+        <button type="button" class="nav-item" onclick="switchTab('friends')">
             <span class="nav-icon">👥</span>
             <span class="nav-label">Friends</span>
         </button>
-        <button class="nav-item" onclick="switchTab('vault')">
+        <button type="button" class="nav-item" onclick="switchTab('vault')">
             <span class="nav-icon">⚙️</span>
             <span class="nav-label">Vault</span>
         </button>
     </nav>
 
-    <script src="script.js"></script>
+    <script src="./script.js" defer></script>
 </body>
 </html>
