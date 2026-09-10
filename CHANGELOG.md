@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-09-11
+
+### Added
+- **Multi-Grade Curricula & Language Expansion**: Introduced complete Class 9 matrices, integrated English Core for Classes 11–12, and added Social Science, English, and Hindi/Sanskrit electives for Classes 9–10.
+- **Social Management Hub**: Built an active friend-request inbox allowing real-time request reviews with instant Accept (✔) and Decline (✖) operations.
+- **Bidirectional Study Circles**: Reworked relational database logic so accepted study peers render accurately on both sender and receiver profiles.
+- **Squad Room Architecture**: Interactive squad generator producing `#SQUAD-XXXX` room tokens with participant roster synchronizations, membership tracking, and exit routines.
+- **Pomodoro Streak Engine**: Linked streak calculations directly to 25-minute Pomodoro completions, persisting timestamped daily streaks to database profiles.
+- **Milestone Victory Celebrations**: Restored high-frequency chime cues and particle confetti when finishing every milestone across a chapter.
+- **Dynamic Directive System**: Automated quote rotation on app boot with 15+ curated focus directives.
+- **Clean Cascade Account Purge**: Implemented the `delete_current_user` RPC executing securely at the Postgres engine level to wipe `auth.users` without leaving orphan credentials.
+
+### Fixed
+- **Milestone Tier State Lock**: Resolved schema constraint bug where viewing foundation tiers permanently downgraded Senior Classes (11 & 12) from 6 milestones to 4.
+- **Squad Code Parsing**: Sanitized squad room search inputs to seamlessly parse IDs regardless of leading `#` symbols.
+- **Cross-User Data Permissions**: Configured PostgreSQL Row Level Security (RLS) policies allowing mutual data visibility across friends and active squad participants.
+
+
 ## [0.1.0] - 2026-09-10
 
 ### Added
