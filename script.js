@@ -1,26 +1,17 @@
-// --- STrackerX v0.1.0 Cloud Engine ---
-const SUPABASE_URL = "https://hndzaifthicnvaahhrxf.supabase.co"; // <-- Paste your Project URL here
-const SUPABASE_ANON_KEY = "sb_publishable_5fOfHVlm1U4DbVhSkyn1zQ_a6ss3Jwm"; // <-- Paste your anon/publishable key here
+// --- STrackerX v0.2.0 Cloud Engine ---
+const SUPABASE_URL = "https://hndzaifthicnvaahhrxf.supabase.co"; 
+const SUPABASE_ANON_KEY = "sb_publishable_5fOfHVlm1U4DbVhSkyn1zQ_a6ss3Jwm"; 
 
-// Initialize Supabase Client safely
 let supabaseClient = null;
 if (window.supabase && typeof window.supabase.createClient === 'function') {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
-// Convert username to internal email for Supabase Auth
-function usernameToInternalEmail(username) {
-    const sanitized = username.toLowerCase().replace(/[^a-z0-9_]/g, '');
-    return `${sanitized}@strackerx.local`;
-}
-
-// To this (use a valid standard domain like .com):
 function usernameToInternalEmail(username) {
     const sanitized = username.toLowerCase().replace(/[^a-z0-9_]/g, '');
     return `${sanitized}@strackerx.com`;
 }
 
-// Safe LocalStorage helpers
 function getSyncStorage(key, fallback) {
     try {
         const item = localStorage.getItem(key);
@@ -36,7 +27,6 @@ function setSyncStorage(key, val) {
     } catch (e) {}
 }
 
-// Web Audio synthesizer for tactile taps
 let audioCtx = null;
 function playTick(freq = 480) {
     try {
@@ -58,7 +48,26 @@ function playTick(freq = 480) {
     } catch (e) {}
 }
 
-// NCERT Curricula Database
+// 15+ Motivational Directives
+const MOTIVATIONAL_QUOTES = [
+    "Small disciplines repeated with consistency every day lead to great achievements.",
+    "Action cures anxiety. Open the book and take the first step.",
+    "The secret of getting ahead is getting started.",
+    "Hard work beats talent when talent doesn't work hard.",
+    "Focus on the process, and the score will take care of itself.",
+    "Your future is created by what you do today, not tomorrow.",
+    "Discipline is choosing between what you want now and what you want most.",
+    "Don't count the days, make the days count.",
+    "One solved problem at a time is how ranks are secured.",
+    "Consistency creates momentum. Protect your streak.",
+    "Clear execution beats raw ambition every single time.",
+    "Quiet effort now brings unmistakable results later.",
+    "Deep focus is a superpower in a distracted world.",
+    "Tough concepts yield to relentless repetition.",
+    "You don't need motivation when you build iron habits."
+];
+
+// Curricula Matrix with English, SST & Languages
 const OFFICIAL_CHAPTERS = {
     "Class 11": {
         "Physics": [
@@ -85,6 +94,10 @@ const OFFICIAL_CHAPTERS = {
             "Photosynthesis in Higher Plants", "Respiration in Plants", "Plant Growth and Development", 
             "Breathing and Exchange of Gases", "Body Fluids and Circulation", "Excretory Products and their Elimination", 
             "Locomotion and Movement", "Neural Control and Coordination", "Chemical Coordination and Integration"
+        ],
+        "English Core": [
+            "The Portrait of a Lady", "A Photograph", "We're Not Afraid to Die", "Discovering Tut",
+            "The Laburnum Top", "The Voice of the Rain", "Childhood", "The Adventure", "Silk Road", "Father to Son"
         ]
     },
     "Class 12": {
@@ -112,9 +125,13 @@ const OFFICIAL_CHAPTERS = {
             "Human Health and Disease", "Microbes in Human Welfare", 
             "Biotechnology: Principles and Processes", "Biotechnology and its Applications", 
             "Organisms and Populations", "Ecosystem", "Biodiversity and Conservation"
+        ],
+        "English Core": [
+            "The Last Lesson", "Lost Spring", "Deep Water", "The Rattrap", "Indigo", "Poets and Pancakes",
+            "The Interview", "Going Places", "My Mother at Sixty-Six", "Keeping Quiet", "A Thing of Beauty", "A Roadside Stand", "Aunt Jennifer's Tigers"
         ]
     },
-    "Foundation": {
+    "Class 10": {
         "Science": [
             "Chemical Reactions and Equations", "Acids, Bases and Salts", "Metals and Non-metals", 
             "Carbon and its Compounds", "Life Processes", "Control and Coordination", 
@@ -126,7 +143,51 @@ const OFFICIAL_CHAPTERS = {
             "Quadratic Equations", "Arithmetic Progressions", "Triangles", "Coordinate Geometry", 
             "Introduction to Trigonometry", "Some Applications of Trigonometry", "Circles", 
             "Areas Related to Circles", "Surface Areas and Volumes", "Statistics", "Probability"
+        ],
+        "Social Science": [
+            "Rise of Nationalism in Europe", "Nationalism in India", "The Making of a Global World", "Print Culture",
+            "Resources and Development", "Forest and Wildlife Resources", "Water Resources", "Agriculture", "Minerals and Energy Resources",
+            "Power Sharing", "Federalism", "Gender, Religion and Caste", "Political Parties", "Outcomes of Democracy",
+            "Development", "Sectors of the Indian Economy", "Money and Credit", "Globalisation"
+        ],
+        "English": [
+            "A Letter to God", "Nelson Mandela: Long Walk to Freedom", "Two Stories about Flying", "From the Diary of Anne Frank",
+            "Glimpses of India", "Mijbil the Otter", "Madam Rides the Bus", "The Sermon at Benares", "The Proposal"
+        ],
+        "Hindi / Sanskrit": [
+            "Surdas ke Pad", "Ram-Lakshman-Parshuram Samvad", "Netaji ka Chashma", "Balgoppin Bhagat", "Lakhnavi Andaz",
+            "Mata ka Anchal", "Sana Sana Hath Jodi", "Main Kyon Likhta Hoon"
         ]
+    },
+    "Class 9": {
+        "Science": [
+            "Matter in Our Surroundings", "Is Matter Around Us Pure", "Atoms and Molecules", "Structure of the Atom",
+            "The Fundamental Unit of Life", "Tissues", "Motion", "Force and Laws of Motion",
+            "Gravitation", "Work and Energy", "Sound", "Improvement in Food Resources"
+        ],
+        "Mathematics": [
+            "Number Systems", "Polynomials", "Coordinate Geometry", "Linear Equations in Two Variables",
+            "Introduction to Euclid's Geometry", "Lines and Angles", "Triangles", "Quadrilaterals",
+            "Circles", "Heron's Formula", "Surface Areas and Volumes", "Statistics"
+        ],
+        "Social Science": [
+            "The French Revolution", "Socialism in Europe & Russian Revolution", "Nazism and the Rise of Hitler",
+            "India - Size and Location", "Physical Features of India", "Drainage", "Climate", "Natural Vegetation",
+            "What is Democracy?", "Constitutional Design", "Electoral Politics", "Working of Institutions",
+            "The Story of Village Palampur", "People as Resource", "Poverty as a Challenge"
+        ],
+        "English": [
+            "The Fun They Had", "The Sound of Music", "The Little Girl", "A Truly Beautiful Mind",
+            "The Snake and the Mirror", "My Childhood", "Reach for the Top", "Kathmandu", "If I Were You"
+        ],
+        "Hindi / Sanskrit": [
+            "Do Bailon ki Katha", "Lhasa ki Aur", "Upbhoktavad ki Sanskriti", "Sanwale Sapnon ki Yaad",
+            "Kabir ki Sakhiyan", "Vaakh", "Raskhan ke Savaiye"
+        ]
+    },
+    "Class 8": {
+        "Science": ["Crop Production", "Microorganisms", "Coal and Petroleum", "Combustion and Flame", "Cell - Structure and Functions", "Force and Pressure", "Friction", "Sound", "Light"],
+        "Mathematics": ["Rational Numbers", "Linear Equations in One Variable", "Understanding Quadrilaterals", "Data Handling", "Squares and Square Roots", "Cubes and Cube Roots", "Comparing Quantities", "Algebraic Expressions", "Mensuration"]
     }
 };
 
@@ -146,18 +207,22 @@ const MILESTONES_SENIOR = [
     { key: "rev2", label: "Rev 2" }
 ];
 
-// App Global State
+function getMilestonesForClass(className) {
+    if (["Class 11", "Class 12"].includes(className)) {
+        return MILESTONES_SENIOR;
+    }
+    return MILESTONES_FOUNDATION;
+}
+
 let userProfile = null;
 let matrixData = {};
 let activeClass = "Class 11";
 let activeSubject = "Physics";
 let currentUserSession = null;
 let authMode = 'login';
+let activeSquadCode = null;
 
 function buildTrackData(track, existingData) {
-    const isFoundation = ['Class 8', 'Class 9', 'Class 10'].includes(track);
-    const milestonesList = isFoundation ? MILESTONES_FOUNDATION : MILESTONES_SENIOR;
-
     let targetClasses = [];
     let targetSubjects = [];
 
@@ -169,18 +234,24 @@ function buildTrackData(track, existingData) {
         targetSubjects = ["Physics", "Chemistry", "Biology"];
     } else if (track === "Class 11 PCM") {
         targetClasses = ["Class 11"];
-        targetSubjects = ["Physics", "Chemistry", "Mathematics"];
+        targetSubjects = ["Physics", "Chemistry", "Mathematics", "English Core"];
     } else if (track === "Class 11 PCB") {
         targetClasses = ["Class 11"];
-        targetSubjects = ["Physics", "Chemistry", "Biology"];
+        targetSubjects = ["Physics", "Chemistry", "Biology", "English Core"];
     } else if (track === "Class 12 PCM") {
         targetClasses = ["Class 12"];
-        targetSubjects = ["Physics", "Chemistry", "Mathematics"];
+        targetSubjects = ["Physics", "Chemistry", "Mathematics", "English Core"];
     } else if (track === "Class 12 PCB") {
         targetClasses = ["Class 12"];
-        targetSubjects = ["Physics", "Chemistry", "Biology"];
+        targetSubjects = ["Physics", "Chemistry", "Biology", "English Core"];
+    } else if (track === "Class 10") {
+        targetClasses = ["Class 10"];
+        targetSubjects = ["Science", "Mathematics", "Social Science", "English", "Hindi / Sanskrit"];
+    } else if (track === "Class 9") {
+        targetClasses = ["Class 9"];
+        targetSubjects = ["Science", "Mathematics", "Social Science", "English", "Hindi / Sanskrit"];
     } else {
-        targetClasses = ["Foundation"];
+        targetClasses = ["Class 8"];
         targetSubjects = ["Science", "Mathematics"];
     }
 
@@ -188,11 +259,12 @@ function buildTrackData(track, existingData) {
 
     targetClasses.forEach(cls => {
         if (!output[cls]) output[cls] = {};
-        const sourceClass = (cls === "Foundation") ? OFFICIAL_CHAPTERS.Foundation : OFFICIAL_CHAPTERS[cls];
+        const sourceClass = OFFICIAL_CHAPTERS[cls] || {};
+        const milestonesList = getMilestonesForClass(cls);
 
         targetSubjects.forEach(sub => {
             if (!output[cls][sub]) {
-                const chapterNames = (sourceClass && sourceClass[sub]) ? sourceClass[sub] : [];
+                const chapterNames = sourceClass[sub] || [];
                 output[cls][sub] = chapterNames.map((name, i) => {
                     const mObj = {};
                     milestonesList.forEach(m => { mObj[m.key] = false; });
@@ -205,10 +277,12 @@ function buildTrackData(track, existingData) {
     return output;
 }
 
-// App Boot
+// Boot App
 async function bootApp() {
     const savedTheme = getSyncStorage('stracker_theme', 'dark');
     document.documentElement.setAttribute('data-theme', savedTheme);
+
+    rotateMotivation();
 
     if (supabaseClient) {
         try {
@@ -231,10 +305,19 @@ async function bootApp() {
             setSyncStorage('stracker_matrix', matrixData);
         }
         loadUserInterface();
+        checkAndRenderSocial();
     }
 }
 
-// Authentication Engine
+function rotateMotivation() {
+    const quoteEl = document.getElementById('directive-quote');
+    if (quoteEl) {
+        const randomIndex = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
+        quoteEl.textContent = `"${MOTIVATIONAL_QUOTES[randomIndex]}"`;
+    }
+}
+
+// Auth Logic
 function setAuthMode(mode) {
     authMode = mode;
     const loginTab = document.getElementById('tab-login');
@@ -284,7 +367,7 @@ async function handleAuthSubmit() {
         const initialMatrix = buildTrackData(track, {});
 
         if (!supabaseClient) {
-            userProfile = { name, handle, track, streak: 1 };
+            userProfile = { name, handle, track, streak: 0, last_study_date: null };
             matrixData = initialMatrix;
             setSyncStorage('stracker_profile', userProfile);
             setSyncStorage('stracker_matrix', matrixData);
@@ -322,7 +405,7 @@ async function handleAuthSubmit() {
                 .eq('id', userId);
         }
 
-        userProfile = { id: userId, name, handle, track, streak: 1 };
+        userProfile = { id: userId, name, handle, track, streak: 0, last_study_date: null };
         matrixData = initialMatrix;
         setSyncStorage('stracker_profile', userProfile);
         setSyncStorage('stracker_matrix', matrixData);
@@ -355,7 +438,8 @@ async function handleAuthSubmit() {
                 name: profile.full_name,
                 handle: profile.username,
                 track: profile.track,
-                streak: profile.streak || 1
+                streak: profile.streak || 0,
+                last_study_date: profile.last_study_date || null
             };
             matrixData = profile.syllabus_data || buildTrackData(profile.track, {});
             setSyncStorage('stracker_profile', userProfile);
@@ -376,7 +460,6 @@ function handleSignOut() {
     }
 }
 
-// Background Cloud Sync
 async function syncMatrixToCloud() {
     if (!supabaseClient || !userProfile?.id) return;
     try {
@@ -400,12 +483,14 @@ function loadUserInterface() {
     const avatarChar = document.getElementById('avatar-char');
     const greeting = document.getElementById('home-greeting');
     const vaultSelect = document.getElementById('vault-stream-select');
+    const homeStreak = document.getElementById('home-streak');
 
     if (trackBadge) trackBadge.textContent = userProfile.track || 'TRACK';
     if (headerHandle) headerHandle.textContent = userProfile.handle || '@user';
     if (avatarChar) avatarChar.textContent = (userProfile.name || 'U').charAt(0).toUpperCase();
     if (greeting) greeting.textContent = `Welcome, ${userProfile.name}`;
     if (vaultSelect) vaultSelect.value = userProfile.track;
+    if (homeStreak) homeStreak.textContent = `${userProfile.streak || 0} Day Streak`;
 
     const availableClasses = Object.keys(matrixData);
     if (availableClasses.length > 0) {
@@ -435,6 +520,10 @@ function switchTab(viewId) {
             btn.classList.add('active');
         }
     });
+
+    if (viewId === 'friends') {
+        checkAndRenderSocial();
+    }
 
     playTick(420);
 }
@@ -501,8 +590,7 @@ function renderMatrixView() {
     if (label) label.textContent = `${activeClass} — ${activeSubject}`;
 
     const chapters = matrixData[activeClass]?.[activeSubject] || [];
-    const isFoundation = ['Class 8', 'Class 9', 'Class 10'].includes(userProfile ? userProfile.track : '');
-    const milestonesList = isFoundation ? MILESTONES_FOUNDATION : MILESTONES_SENIOR;
+    const milestonesList = getMilestonesForClass(activeClass);
 
     chapters.forEach(ch => {
         const card = document.createElement('div');
@@ -524,7 +612,7 @@ function renderMatrixView() {
         `;
 
         const grid = document.createElement('div');
-        grid.className = `milestones-grid ${isFoundation ? 'four-cols' : ''}`;
+        grid.className = `milestones-grid ${milestonesList.length === 4 ? 'four-cols' : ''}`;
 
         milestonesList.forEach(m => {
             const isDone = !!ch.milestones[m.key];
@@ -546,7 +634,16 @@ function toggleMilestone(chapterId, key) {
     if (!chapter) return;
 
     chapter.milestones[key] = !chapter.milestones[key];
-    playTick(chapter.milestones[key] ? 620 : 250);
+
+    const milestonesList = getMilestonesForClass(activeClass);
+    const isCompletedNow = milestonesList.every(m => chapter.milestones[m.key]);
+
+    if (isCompletedNow) {
+        playTick(880);
+        if (typeof confetti === 'function') confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 } });
+    } else {
+        playTick(chapter.milestones[key] ? 620 : 250);
+    }
 
     setSyncStorage('stracker_matrix', matrixData);
     renderMatrixView();
@@ -554,7 +651,6 @@ function toggleMilestone(chapterId, key) {
     syncMatrixToCloud();
 }
 
-// Custom Chapter Logic
 function toggleAddModal(show) {
     const modal = document.getElementById('modal-add-chapter');
     if (!modal) return;
@@ -575,9 +671,7 @@ function submitCustomChapter() {
     const name = input ? input.value.trim() : '';
     if (!name) return;
 
-    const isFoundation = ['Class 8', 'Class 9', 'Class 10'].includes(userProfile?.track);
-    const milestonesList = isFoundation ? MILESTONES_FOUNDATION : MILESTONES_SENIOR;
-
+    const milestonesList = getMilestonesForClass(activeClass);
     const mObj = {};
     milestonesList.forEach(m => { mObj[m.key] = false; });
 
@@ -661,7 +755,7 @@ function toggleTheme() {
     playTick(500);
 }
 
-// Sprint Timer
+// Sprint Timer & Dynamic Streak Engine
 let sprintTime = 25 * 60;
 let timerId = null;
 
@@ -670,6 +764,40 @@ function updateTimerDisplay() {
     const sec = String(sprintTime % 60).padStart(2, '0');
     const display = document.getElementById('timer-display');
     if (display) display.textContent = `${min}:${sec}`;
+}
+
+function recordSprintStreak() {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const lastDate = userProfile.last_study_date;
+
+    if (lastDate !== todayStr) {
+        if (!lastDate) {
+            userProfile.streak = 1;
+        } else {
+            const last = new Date(lastDate);
+            const today = new Date(todayStr);
+            const diffDays = Math.round((today - last) / (1000 * 3600 * 24));
+
+            if (diffDays === 1) {
+                userProfile.streak = (userProfile.streak || 0) + 1;
+            } else if (diffDays > 1) {
+                userProfile.streak = 1;
+            }
+        }
+        userProfile.last_study_date = todayStr;
+        setSyncStorage('stracker_profile', userProfile);
+
+        const homeStreak = document.getElementById('home-streak');
+        if (homeStreak) homeStreak.textContent = `${userProfile.streak} Day Streak`;
+
+        if (supabaseClient && userProfile?.id) {
+            supabaseClient
+                .from('profiles')
+                .update({ streak: userProfile.streak })
+                .eq('id', userProfile.id)
+                .then(() => {});
+        }
+    }
 }
 
 function toggleTimer() {
@@ -690,8 +818,9 @@ function toggleTimer() {
                 timerId = null;
                 if (btn) btn.textContent = 'START SPRINT';
                 playTick(880);
-                if (typeof confetti === 'function') confetti();
-                alert('Focus Sprint Cleared! Take a 5-minute break.');
+                if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
+                recordSprintStreak();
+                alert('🎯 Focus Sprint Completed! Great job! Study streak updated.');
             }
         }, 1000);
     }
@@ -712,7 +841,108 @@ function toggleModal(id, show) {
     if (show) playTick(350);
 }
 
-// Friends & Squad Functions
+// Social Infrastructure: Friend Requests & Squads
+async function checkAndRenderSocial() {
+    if (!supabaseClient || !userProfile?.id) return;
+
+    try {
+        // Render Incoming Requests
+        const { data: requests } = await supabaseClient
+            .from('friendships')
+            .select(`
+                id,
+                sender_id,
+                profiles:sender_id(username, full_name)
+            `)
+            .eq('receiver_id', userProfile.id)
+            .eq('status', 'pending');
+
+        const reqContainer = document.getElementById('incoming-requests-container');
+        if (reqContainer) {
+            if (requests && requests.length > 0) {
+                reqContainer.innerHTML = '';
+                requests.forEach(r => {
+                    const card = document.createElement('div');
+                    card.className = 'squad-card glass-panel';
+                    card.innerHTML = `
+                        <div class="user-meta">
+                            <p>${r.profiles?.full_name || 'Student'}</p>
+                            <span>${r.profiles?.username || ''}</span>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" class="btn-primary" onclick="respondFriendRequest('${r.id}', 'accepted')">✔</button>
+                            <button type="button" class="btn-ghost" onclick="respondFriendRequest('${r.id}', 'declined')">✖</button>
+                        </div>
+                    `;
+                    reqContainer.appendChild(card);
+                });
+            } else {
+                reqContainer.innerHTML = '<p class="subtext" style="padding: 10px;">No pending requests.</p>';
+            }
+        }
+
+        // Render Accepted Friends
+        const { data: friendsList } = await supabaseClient
+            .from('friendships')
+            .select(`
+                id,
+                sender_id,
+                receiver_id,
+                sender:sender_id(id, username, full_name),
+                receiver:receiver_id(id, username, full_name)
+            `)
+            .eq('status', 'accepted')
+            .or(`sender_id.eq.${userProfile.id},receiver_id.eq.${userProfile.id}`);
+
+        const friendsContainer = document.getElementById('friends-list-container');
+        const homePeerStatus = document.getElementById('home-peer-status');
+        const homeFriendsStat = document.getElementById('home-friends-stat');
+
+        if (friendsContainer && friendsList) {
+            const accepted = friendsList.map(f => f.sender_id === userProfile.id ? f.receiver : f.sender);
+            if (homeFriendsStat) homeFriendsStat.textContent = `${accepted.length} Connected`;
+
+            if (accepted.length > 0) {
+                friendsContainer.innerHTML = '';
+                accepted.forEach(fr => {
+                    const card = document.createElement('div');
+                    card.className = 'squad-card glass-panel';
+                    card.innerHTML = `
+                        <div class="user-meta">
+                            <p>${fr.full_name}</p>
+                            <span>${fr.username}</span>
+                        </div>
+                        <span class="badge-tag">ACTIVE</span>
+                    `;
+                    friendsContainer.appendChild(card);
+                });
+                if (homePeerStatus) homePeerStatus.textContent = `${accepted.length} friend(s) in your study circle. Keep the momentum going!`;
+            } else {
+                friendsContainer.innerHTML = `
+                    <div class="squad-card glass-panel">
+                        <div class="user-meta">
+                            <p>No friends added yet.</p>
+                            <span>Share your username with friends to study together.</span>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    } catch (e) {
+        console.warn("Social render error:", e);
+    }
+}
+
+async function respondFriendRequest(requestId, newStatus) {
+    if (!supabaseClient) return;
+    await supabaseClient
+        .from('friendships')
+        .update({ status: newStatus })
+        .eq('id', requestId);
+
+    checkAndRenderSocial();
+}
+
 async function handleAddFriend() {
     const input = document.getElementById('add-friend-input');
     let targetUsername = input ? input.value.trim() : '';
@@ -720,7 +950,7 @@ async function handleAddFriend() {
     targetUsername = targetUsername.startsWith('@') ? targetUsername : `@${targetUsername}`;
 
     if (!supabaseClient) {
-        alert("Supabase client is not connected.");
+        alert("Supabase is not initialized.");
         return;
     }
 
@@ -750,7 +980,7 @@ async function handleAddFriend() {
             });
 
         if (reqError) {
-            alert("Friend request already sent or an error occurred.");
+            alert("Friend request already sent or error occurred.");
         } else {
             alert(`Friend request sent to ${targetUsername}!`);
             if (input) input.value = '';
@@ -760,20 +990,87 @@ async function handleAddFriend() {
     }
 }
 
-function handleCreateSquad() {
-    const randomID = Math.floor(1000 + Math.random() * 9000);
-    const code = `#SQUAD-${randomID}`;
-    alert(`Squad Room Created: ${code}\nShare this code with your peers.`);
+async function handleCreateSquad() {
+    if (!supabaseClient || !userProfile?.id) {
+        alert("Sign in to create a squad room.");
+        return;
+    }
+
+    const code = `#SQUAD-${Math.floor(1000 + Math.random() * 9000)}`;
+    const { error } = await supabaseClient.from('squad_rooms').insert({
+        room_code: code,
+        created_by: userProfile.id,
+        members: [{ id: userProfile.id, handle: userProfile.handle, name: userProfile.name }]
+    });
+
+    if (error) {
+        alert("Error creating room: " + error.message);
+        return;
+    }
+
+    activeSquadCode = code;
+    displayActiveSquad(code, [{ handle: userProfile.handle, name: userProfile.name }]);
+    alert(`Squad created: ${code}\nShare this code with your study squad!`);
 }
 
-function handleJoinSquad() {
+async function handleJoinSquad() {
     const input = document.getElementById('join-squad-input');
-    const code = input ? input.value.trim() : '';
+    const code = input ? input.value.trim().toUpperCase() : '';
     if (!code) {
         alert("Please enter a room code.");
         return;
     }
-    alert(`Connected to Squad: ${code}`);
+
+    if (!supabaseClient || !userProfile?.id) return;
+
+    const { data: squad, error } = await supabaseClient
+        .from('squad_rooms')
+        .select('*')
+        .eq('room_code', code)
+        .single();
+
+    if (error || !squad) {
+        alert("Squad room not found.");
+        return;
+    }
+
+    let members = squad.members || [];
+    if (!members.find(m => m.id === userProfile.id)) {
+        members.push({ id: userProfile.id, handle: userProfile.handle, name: userProfile.name });
+        await supabaseClient
+            .from('squad_rooms')
+            .update({ members })
+            .eq('room_code', code);
+    }
+
+    activeSquadCode = code;
+    displayActiveSquad(code, members);
+    alert(`Joined Squad: ${code}!`);
+}
+
+function displayActiveSquad(code, members) {
+    const box = document.getElementById('active-squad-box');
+    const title = document.getElementById('active-squad-title');
+    const list = document.getElementById('squad-members-list');
+    if (!box || !list) return;
+
+    box.style.display = 'block';
+    if (title) title.textContent = `ACTIVE SQUAD — ${code}`;
+
+    list.innerHTML = '';
+    members.forEach(m => {
+        const item = document.createElement('div');
+        item.className = 'squad-card glass-panel';
+        item.style.marginTop = '6px';
+        item.innerHTML = `
+            <div class="user-meta">
+                <p>${m.name}</p>
+                <span>${m.handle}</span>
+            </div>
+            <span class="badge-tag">IN ROOM</span>
+        `;
+        list.appendChild(item);
+    });
 }
 
 // In-App Cloud Feedback
@@ -803,7 +1100,7 @@ async function submitFeedback() {
     alert("Feedback received! Thank you for supporting STrackerX.");
 }
 
-// Backups & Complete Account Purge
+// Backup & Cloud Account Wipe
 function exportDataBackup() {
     const blob = new Blob([JSON.stringify({ userProfile, matrixData }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -837,30 +1134,25 @@ function importDataBackup(e) {
 }
 
 async function promptSecureReset() {
-    const confirmation = prompt("To permanently delete your account and erase all cloud & local milestones, type 'DELETE':");
+    const confirmation = prompt("To permanently delete your account and erase all cloud & local records, type 'DELETE':");
     if (confirmation === 'DELETE') {
         try {
             if (supabaseClient && userProfile?.id) {
-                await supabaseClient
-                    .from('profiles')
-                    .delete()
-                    .eq('id', userProfile.id);
-
+                // Calls RPC to delete directly from auth.users (cascading to profiles)
+                await supabaseClient.rpc('delete_current_user');
                 await supabaseClient.auth.signOut();
             }
         } catch (err) {
-            console.warn("Cloud wipe error:", err);
+            console.warn("Cascade wipe error:", err);
         }
 
         try { localStorage.clear(); } catch(e){}
 
-        alert("Account and cloud records deleted successfully.");
+        alert("Account and cloud records permanently deleted.");
         location.reload();
     }
 }
 
-// Start app once DOM content is ready
 document.addEventListener('DOMContentLoaded', () => {
     bootApp();
 });
-
