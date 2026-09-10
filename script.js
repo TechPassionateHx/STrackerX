@@ -1,11 +1,17 @@
-// --- STrackerX v0.1.0 Cloud Engine ---
+// --- STrackerX v0.1.0 Cloud Engine (Username Auth) ---
 const SUPABASE_URL = "https://hndzaifthicnvaahhrxf.supabase.co"; // <-- INSERT YOUR PROJECT URL HERE
 const SUPABASE_ANON_KEY = "sb_publishable_5fOfHVlm1U4DbVhSkyn1zQ_a6ss3Jwm";                // <-- INSERT YOUR ANON/PUBLISHABLE KEY HERE
 
 // Initialize Supabase SDK Client
 const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Fast Sync LocalStorage Helper
+// Helper: Converts username to a valid internal email for Supabase Auth
+function usernameToInternalEmail(username) {
+    const sanitized = username.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    return `${sanitized}@strackerx.local`;
+}
+
+// Storage Helpers
 function getSyncStorage(key, fallback) {
     try {
         const item = localStorage.getItem(key);
@@ -21,7 +27,7 @@ function setSyncStorage(key, val) {
     } catch (e) {}
 }
 
-// Procedural Click Sound (Non-blocking)
+// Audio Feedback
 let audioCtx = null;
 function playTick(freq = 480) {
     try {
@@ -190,18 +196,17 @@ function buildTrackData(track, existingData) {
     return output;
 }
 
-// Boot Sequence
+// App Boot
 async function bootApp() {
     const savedTheme = getSyncStorage('stracker_theme', 'dark');
     document.documentElement.setAttribute('data-theme', savedTheme);
 
-    // Verify Active Supabase Session
     if (supabaseClient) {
         try {
             const { data: { session } } = await supabaseClient.auth.getSession();
             currentUserSession = session;
         } catch (e) {
-            console.warn("Auth check bypassed offline:", e);
+            console.warn("Auth check offline:", e);
         }
     }
 
@@ -220,7 +225,7 @@ async function bootApp() {
     }
 }
 
-// Authentication Engine (Supabase-backed)
+// Username-Only Authentication
 function setAuthMode(mode) {
     authMode = mode;
     const loginTab = document.getElementById('tab-login');
@@ -245,35 +250,43 @@ function setAuthMode(mode) {
 }
 
 async function handleAuthSubmit() {
-    const email = document.getElementById('auth-email').value.trim();
+    const usernameInput = document.getElementById('auth-username').value.trim();
     const password = document.getElementById('auth-password').value.trim();
     const errorEl = document.getElementById('auth-error-msg');
     errorEl.style.display = 'none';
 
-    if (!email || !password) {
-        errorEl.textContent = 'Please enter both email and password.';
+    if (!usernameInput || !password) {
+        errorEl.textContent = 'Please enter both username and password.';
         errorEl.style.display = 'block';
         return;
     }
 
+    const cleanUsername = usernameInput.replace(/^@/, '').toLowerCase();
+    const internalEmail = usernameToInternalEmail(cleanUsername);
+
     if (authMode === 'signup') {
-        const name = document.getElementById('auth-name').value.trim() || 'Learner';
-        let handle = document.getElementById('auth-handle').value.trim() || 'operator';
-        handle = handle.startsWith('@') ? handle : `@${handle}`;
+        const name = document.getElementById('auth-name').value.trim() || cleanUsername;
+        const handle = `@${cleanUsername}`;
         const track = document.getElementById('auth-track').value;
+        const initialMatrix = buildTrackData(track, {});
 
         if (!supabaseClient) {
-            // Local fallback if Supabase keys not entered
-            userProfile = { name, handle, track, streak: 1 };
-            matrixData = buildTrackData(track, {});
-            setSyncStorage('stracker_profile', userProfile);
-            setSyncStorage('stracker_matrix', matrixData);
-            document.getElementById('auth-overlay').style.display = 'none';
-            loadUserInterface();
+            alert("Supabase client is not connected.");
             return;
         }
 
-        const { data: authData, error: authError } = await supabaseClient.auth.signUp({ email, password });
+        const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+            email: internalEmail,
+            password: password,
+            options: {
+                data: {
+                    username: handle,
+                    full_name: name,
+                    track: track
+                }
+            }
+        });
+
         if (authError) {
             errorEl.textContent = authError.message;
             errorEl.style.display = 'block';
@@ -281,16 +294,12 @@ async function handleAuthSubmit() {
         }
 
         const userId = authData.user?.id;
-        const initialMatrix = buildTrackData(track, {});
 
         if (userId) {
-            await supabaseClient.from('profiles').insert({
-                id: userId,
-                username: handle,
-                full_name: name,
-                track: track,
-                syllabus_data: initialMatrix
-            });
+            await supabaseClient
+                .from('profiles')
+                .update({ syllabus_data: initialMatrix })
+                .eq('id', userId);
         }
 
         userProfile = { id: userId, name, handle, track, streak: 1 };
@@ -301,18 +310,16 @@ async function handleAuthSubmit() {
         document.getElementById('auth-overlay').style.display = 'none';
         loadUserInterface();
     } else {
-        // Sign In
-        if (!supabaseClient) {
-            userProfile = getSyncStorage('stracker_profile', { name: 'Learner', handle: '@learner', track: 'JEE' });
-            matrixData = getSyncStorage('stracker_matrix', buildTrackData('JEE', {}));
-            document.getElementById('auth-overlay').style.display = 'none';
-            loadUserInterface();
-            return;
-        }
+        // Log In
+        if (!supabaseClient) return;
 
-        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+            email: internalEmail,
+            password: password
+        });
+
         if (error) {
-            errorEl.textContent = error.message;
+            errorEl.textContent = "Invalid username or password.";
             errorEl.style.display = 'block';
             return;
         }
@@ -358,7 +365,7 @@ async function syncMatrixToCloud() {
             })
             .eq('id', userProfile.id);
     } catch (e) {
-        console.warn('Cloud sync error:', e);
+        console.warn('Sync error:', e);
     }
 }
 
@@ -519,7 +526,7 @@ function toggleMilestone(chapterId, key) {
     setSyncStorage('stracker_matrix', matrixData);
     renderMatrixView();
     updateProgressAnalytics();
-    syncMatrixToCloud(); // Save to cloud
+    syncMatrixToCloud();
 }
 
 // Custom Chapter Logic
@@ -693,7 +700,6 @@ async function handleAddFriend() {
     }
 
     try {
-        // Look up friend by username
         const { data: friend, error } = await supabaseClient
             .from('profiles')
             .select('id, username')
@@ -710,7 +716,6 @@ async function handleAddFriend() {
             return;
         }
 
-        // Send friend request
         const { error: reqError } = await supabaseClient
             .from('friendships')
             .insert({
@@ -773,7 +778,7 @@ async function submitFeedback() {
     alert("Feedback received! Thank you for supporting STrackerX.");
 }
 
-// Backups & Reset
+// Backups & Complete Account Purge
 function exportDataBackup() {
     const blob = new Blob([JSON.stringify({ userProfile, matrixData }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -810,28 +815,26 @@ async function promptSecureReset() {
     const confirmation = prompt("To permanently delete your account and erase all cloud & local milestones, type 'DELETE':");
     if (confirmation === 'DELETE') {
         try {
-            // 1. Delete user row from Supabase database
+            // Delete profile record from Supabase
             if (supabaseClient && userProfile?.id) {
                 await supabaseClient
                     .from('profiles')
                     .delete()
                     .eq('id', userProfile.id);
 
-                // Sign out of the cloud session
                 await supabaseClient.auth.signOut();
             }
         } catch (err) {
             console.warn("Cloud wipe error:", err);
         }
 
-        // 2. Clear phone / browser storage
+        // Clear local storage
         try { localStorage.clear(); } catch(e){}
 
         alert("Account and cloud records deleted successfully.");
         location.reload();
     }
 }
-
 
 // Ignition
 bootApp();
