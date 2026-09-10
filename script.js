@@ -1,17 +1,20 @@
-// --- STrackerX v0.1.0 Cloud Engine (Username Auth) ---
-const SUPABASE_URL = "https://hndzaifthicnvaahhrxf.supabase.co"; // <-- INSERT YOUR PROJECT URL HERE
-const SUPABASE_ANON_KEY = "sb_publishable_5fOfHVlm1U4DbVhSkyn1zQ_a6ss3Jwm";                // <-- INSERT YOUR ANON/PUBLISHABLE KEY HERE
+// --- STrackerX v0.1.0 Cloud Engine ---
+const SUPABASE_URL = "https://hndzaifthicnvaahhrxf.supabase.co"; // <-- Paste your Project URL here
+const SUPABASE_ANON_KEY = "sb_publishable_5fOfHVlm1U4DbVhSkyn1zQ_a6ss3Jwm"; // <-- Paste your anon/publishable key here
 
-// Initialize Supabase SDK Client
-const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Initialize Supabase Client safely
+let supabaseClient = null;
+if (window.supabase && typeof window.supabase.createClient === 'function') {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
 
-// Helper: Converts username to a valid internal email for Supabase Auth
+// Convert username to internal email for Supabase Auth
 function usernameToInternalEmail(username) {
     const sanitized = username.toLowerCase().replace(/[^a-z0-9_]/g, '');
     return `${sanitized}@strackerx.local`;
 }
 
-// Storage Helpers
+// Safe LocalStorage helpers
 function getSyncStorage(key, fallback) {
     try {
         const item = localStorage.getItem(key);
@@ -27,7 +30,7 @@ function setSyncStorage(key, val) {
     } catch (e) {}
 }
 
-// Audio Feedback
+// Web Audio synthesizer for tactile taps
 let audioCtx = null;
 function playTick(freq = 480) {
     try {
@@ -40,7 +43,7 @@ function playTick(freq = 480) {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(70, audioCtx.currentTime + 0.05);
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
@@ -137,7 +140,7 @@ const MILESTONES_SENIOR = [
     { key: "rev2", label: "Rev 2" }
 ];
 
-// App State
+// App Global State
 let userProfile = null;
 let matrixData = {};
 let activeClass = "Class 11";
@@ -186,7 +189,7 @@ function buildTrackData(track, existingData) {
                 const chapterNames = (sourceClass && sourceClass[sub]) ? sourceClass[sub] : [];
                 output[cls][sub] = chapterNames.map((name, i) => {
                     const mObj = {};
-                    milestonesList.forEach(m => mObj[m.key] = false);
+                    milestonesList.forEach(m => { mObj[m.key] = false; });
                     return { id: `ch_${cls}_${sub}_${i}`, name, isCustom: false, milestones: mObj };
                 });
             }
@@ -225,7 +228,7 @@ async function bootApp() {
     }
 }
 
-// Username-Only Authentication
+// Authentication Engine
 function setAuthMode(mode) {
     authMode = mode;
     const loginTab = document.getElementById('tab-login');
@@ -235,29 +238,31 @@ function setAuthMode(mode) {
     const submitBtn = document.getElementById('auth-submit-btn');
 
     if (mode === 'signup') {
-        signupTab.classList.add('active');
-        loginTab.classList.remove('active');
-        extraFields.style.display = 'flex';
-        title.textContent = 'Create STrackerX Account';
-        submitBtn.textContent = 'Register & Launch';
+        if (signupTab) signupTab.classList.add('active');
+        if (loginTab) loginTab.classList.remove('active');
+        if (extraFields) extraFields.style.display = 'flex';
+        if (title) title.textContent = 'Create STrackerX Account';
+        if (submitBtn) submitBtn.textContent = 'Register & Launch';
     } else {
-        loginTab.classList.add('active');
-        signupTab.classList.remove('active');
-        extraFields.style.display = 'none';
-        title.textContent = 'Sign In to STrackerX';
-        submitBtn.textContent = 'Log In';
+        if (loginTab) loginTab.classList.add('active');
+        if (signupTab) signupTab.classList.remove('active');
+        if (extraFields) extraFields.style.display = 'none';
+        if (title) title.textContent = 'Sign In to STrackerX';
+        if (submitBtn) submitBtn.textContent = 'Log In';
     }
 }
 
 async function handleAuthSubmit() {
-    const usernameInput = document.getElementById('auth-username').value.trim();
-    const password = document.getElementById('auth-password').value.trim();
+    const usernameInput = document.getElementById('auth-username')?.value.trim();
+    const password = document.getElementById('auth-password')?.value.trim();
     const errorEl = document.getElementById('auth-error-msg');
-    errorEl.style.display = 'none';
+    if (errorEl) errorEl.style.display = 'none';
 
     if (!usernameInput || !password) {
-        errorEl.textContent = 'Please enter both username and password.';
-        errorEl.style.display = 'block';
+        if (errorEl) {
+            errorEl.textContent = 'Please enter both username and password.';
+            errorEl.style.display = 'block';
+        }
         return;
     }
 
@@ -265,13 +270,20 @@ async function handleAuthSubmit() {
     const internalEmail = usernameToInternalEmail(cleanUsername);
 
     if (authMode === 'signup') {
-        const name = document.getElementById('auth-name').value.trim() || cleanUsername;
+        const nameInput = document.getElementById('auth-name');
+        const trackInput = document.getElementById('auth-track');
+        const name = nameInput?.value.trim() || cleanUsername;
         const handle = `@${cleanUsername}`;
-        const track = document.getElementById('auth-track').value;
+        const track = trackInput ? trackInput.value : 'JEE';
         const initialMatrix = buildTrackData(track, {});
 
         if (!supabaseClient) {
-            alert("Supabase client is not connected.");
+            userProfile = { name, handle, track, streak: 1 };
+            matrixData = initialMatrix;
+            setSyncStorage('stracker_profile', userProfile);
+            setSyncStorage('stracker_matrix', matrixData);
+            document.getElementById('auth-overlay').style.display = 'none';
+            loadUserInterface();
             return;
         }
 
@@ -288,8 +300,10 @@ async function handleAuthSubmit() {
         });
 
         if (authError) {
-            errorEl.textContent = authError.message;
-            errorEl.style.display = 'block';
+            if (errorEl) {
+                errorEl.textContent = authError.message;
+                errorEl.style.display = 'block';
+            }
             return;
         }
 
@@ -307,10 +321,10 @@ async function handleAuthSubmit() {
         setSyncStorage('stracker_profile', userProfile);
         setSyncStorage('stracker_matrix', matrixData);
 
-        document.getElementById('auth-overlay').style.display = 'none';
+        const overlay = document.getElementById('auth-overlay');
+        if (overlay) overlay.style.display = 'none';
         loadUserInterface();
     } else {
-        // Log In
         if (!supabaseClient) return;
 
         const { data, error } = await supabaseClient.auth.signInWithPassword({
@@ -319,8 +333,10 @@ async function handleAuthSubmit() {
         });
 
         if (error) {
-            errorEl.textContent = "Invalid username or password.";
-            errorEl.style.display = 'block';
+            if (errorEl) {
+                errorEl.textContent = "Invalid username or password.";
+                errorEl.style.display = 'block';
+            }
             return;
         }
 
@@ -340,7 +356,8 @@ async function handleAuthSubmit() {
             setSyncStorage('stracker_matrix', matrixData);
         }
 
-        document.getElementById('auth-overlay').style.display = 'none';
+        const overlay = document.getElementById('auth-overlay');
+        if (overlay) overlay.style.display = 'none';
         loadUserInterface();
     }
 }
@@ -430,6 +447,7 @@ function renderClassSelectors() {
     container.innerHTML = '';
     classes.forEach(cls => {
         const btn = document.createElement('button');
+        btn.type = 'button';
         btn.className = `class-btn ${cls === activeClass ? 'active' : ''}`;
         btn.textContent = cls;
         btn.onclick = () => {
@@ -455,6 +473,7 @@ function renderSubjectTabs() {
 
     subjects.forEach(sub => {
         const btn = document.createElement('button');
+        btn.type = 'button';
         btn.className = `tab-btn ${sub === activeSubject ? 'active' : ''}`;
         btn.textContent = sub;
         btn.onclick = () => {
@@ -492,7 +511,7 @@ function renderMatrixView() {
                 <div class="chapter-title-wrap">
                     <span class="chapter-title">${ch.name}</span>
                     ${ch.isCustom ? '<span class="badge-custom">Custom</span>' : ''}
-                    ${ch.isCustom ? `<button class="btn-del-chapter" onclick="deleteCustomChapter('${ch.id}')" title="Delete">✕</button>` : ''}
+                    ${ch.isCustom ? `<button type="button" class="btn-del-chapter" onclick="deleteCustomChapter('${ch.id}')" title="Delete">✕</button>` : ''}
                 </div>
                 <span class="chapter-pct">${pct}%</span>
             </div>
@@ -550,11 +569,11 @@ function submitCustomChapter() {
     const name = input ? input.value.trim() : '';
     if (!name) return;
 
-    const isFoundation = ['Class 8', 'Class 9', 'Class 10'].includes(userProfile.track);
+    const isFoundation = ['Class 8', 'Class 9', 'Class 10'].includes(userProfile?.track);
     const milestonesList = isFoundation ? MILESTONES_FOUNDATION : MILESTONES_SENIOR;
 
     const mObj = {};
-    milestonesList.forEach(m => mObj[m.key] = false);
+    milestonesList.forEach(m => { mObj[m.key] = false; });
 
     const newChapter = {
         id: `custom_${Date.now()}`,
@@ -695,7 +714,7 @@ async function handleAddFriend() {
     targetUsername = targetUsername.startsWith('@') ? targetUsername : `@${targetUsername}`;
 
     if (!supabaseClient) {
-        alert("Connect Supabase API keys to enable live multiplayer.");
+        alert("Supabase client is not connected.");
         return;
     }
 
@@ -725,7 +744,7 @@ async function handleAddFriend() {
             });
 
         if (reqError) {
-            alert("Friend request already sent or error occurred.");
+            alert("Friend request already sent or an error occurred.");
         } else {
             alert(`Friend request sent to ${targetUsername}!`);
             if (input) input.value = '';
@@ -815,7 +834,6 @@ async function promptSecureReset() {
     const confirmation = prompt("To permanently delete your account and erase all cloud & local milestones, type 'DELETE':");
     if (confirmation === 'DELETE') {
         try {
-            // Delete profile record from Supabase
             if (supabaseClient && userProfile?.id) {
                 await supabaseClient
                     .from('profiles')
@@ -828,7 +846,6 @@ async function promptSecureReset() {
             console.warn("Cloud wipe error:", err);
         }
 
-        // Clear local storage
         try { localStorage.clear(); } catch(e){}
 
         alert("Account and cloud records deleted successfully.");
@@ -836,5 +853,7 @@ async function promptSecureReset() {
     }
 }
 
-// Ignition
-bootApp();
+// Start app once DOM content is ready
+document.addEventListener('DOMContentLoaded', () => {
+    bootApp();
+});
