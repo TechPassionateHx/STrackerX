@@ -14,6 +14,12 @@ function usernameToInternalEmail(username) {
     return `${sanitized}@strackerx.local`;
 }
 
+// To this (use a valid standard domain like .com):
+function usernameToInternalEmail(username) {
+    const sanitized = username.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    return `${sanitized}@strackerx.com`;
+}
+
 // Safe LocalStorage helpers
 function getSyncStorage(key, fallback) {
     try {
