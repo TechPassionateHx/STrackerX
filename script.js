@@ -857,3 +857,4 @@ async function promptSecureReset() {
 document.addEventListener('DOMContentLoaded', () => {
     bootApp();
 });
+
