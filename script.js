@@ -1,29 +1,11 @@
-// --- STrackerX v0.1.0 Engine (Step 1 Unified Build) ---
+// --- STrackerX v0.1.0 Cloud Engine ---
+const SUPABASE_URL = "https://hndzaifthicnvaahhrxf.supabase.co"; // <-- INSERT YOUR PROJECT URL HERE
+const SUPABASE_ANON_KEY = "sb_publishable_5fOfHVlm1U4DbVhSkyn1zQ_a6ss3Jwm";                // <-- INSERT YOUR ANON/PUBLISHABLE KEY HERE
 
-// Synchronous Fast Storage with Background IndexedDB Mirror
-const DB_NAME = 'STrackerX_DB';
-const STORE_NAME = 'app_state';
-let dbInstance = null;
+// Initialize Supabase SDK Client
+const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Initialize IndexedDB in background without blocking execution
-(function initBackgroundDB() {
-    try {
-        if (!window.indexedDB) return;
-        const req = indexedDB.open(DB_NAME, 2);
-        req.onupgradeneeded = (e) => {
-            const db = e.target.result;
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-                db.createObjectStore(STORE_NAME);
-            }
-        };
-        req.onsuccess = (e) => {
-            dbInstance = e.target.result;
-        };
-    } catch (e) {
-        // Fallback silently
-    }
-})();
-
+// Fast Sync LocalStorage Helper
 function getSyncStorage(key, fallback) {
     try {
         const item = localStorage.getItem(key);
@@ -37,15 +19,9 @@ function setSyncStorage(key, val) {
     try {
         localStorage.setItem(key, JSON.stringify(val));
     } catch (e) {}
-    try {
-        if (dbInstance) {
-            const tx = dbInstance.transaction(STORE_NAME, 'readwrite');
-            tx.objectStore(STORE_NAME).put(val, key);
-        }
-    } catch (e) {}
 }
 
-// Procedural Audio Engine
+// Procedural Click Sound (Non-blocking)
 let audioCtx = null;
 function playTick(freq = 480) {
     try {
@@ -160,7 +136,8 @@ let userProfile = null;
 let matrixData = {};
 let activeClass = "Class 11";
 let activeSubject = "Physics";
-let currentSquadCode = null;
+let currentUserSession = null;
+let authMode = 'login';
 
 function buildTrackData(track, existingData) {
     const isFoundation = ['Class 8', 'Class 9', 'Class 10'].includes(track);
@@ -213,47 +190,176 @@ function buildTrackData(track, existingData) {
     return output;
 }
 
-// Instant Boot Sequence
-function bootApp() {
+// Boot Sequence
+async function bootApp() {
     const savedTheme = getSyncStorage('stracker_theme', 'dark');
     document.documentElement.setAttribute('data-theme', savedTheme);
 
+    // Verify Active Supabase Session
+    if (supabaseClient) {
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            currentUserSession = session;
+        } catch (e) {
+            console.warn("Auth check bypassed offline:", e);
+        }
+    }
+
     userProfile = getSyncStorage('stracker_profile', null);
 
-    if (!userProfile) {
-        const overlay = document.getElementById('onboarding-overlay');
+    if (!currentUserSession && !userProfile) {
+        const overlay = document.getElementById('auth-overlay');
         if (overlay) overlay.style.display = 'flex';
     } else {
         matrixData = getSyncStorage('stracker_matrix', null);
         if (!matrixData || Object.keys(matrixData).length === 0) {
-            matrixData = buildTrackData(userProfile.track, {});
+            matrixData = buildTrackData(userProfile?.track || 'JEE', {});
             setSyncStorage('stracker_matrix', matrixData);
         }
         loadUserInterface();
     }
 }
 
-function completeOnboarding() {
-    const nameInput = document.getElementById('ob-name');
-    const handleInput = document.getElementById('ob-handle');
-    const trackSelect = document.getElementById('ob-track');
+// Authentication Engine (Supabase-backed)
+function setAuthMode(mode) {
+    authMode = mode;
+    const loginTab = document.getElementById('tab-login');
+    const signupTab = document.getElementById('tab-signup');
+    const extraFields = document.getElementById('signup-extra-fields');
+    const title = document.getElementById('auth-title');
+    const submitBtn = document.getElementById('auth-submit-btn');
 
-    const name = (nameInput && nameInput.value.trim()) || 'Learner';
-    const rawHandle = (handleInput && handleInput.value.trim()) || 'operator';
-    const handle = rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`;
-    const track = trackSelect ? trackSelect.value : 'JEE';
+    if (mode === 'signup') {
+        signupTab.classList.add('active');
+        loginTab.classList.remove('active');
+        extraFields.style.display = 'flex';
+        title.textContent = 'Create STrackerX Account';
+        submitBtn.textContent = 'Register & Launch';
+    } else {
+        loginTab.classList.add('active');
+        signupTab.classList.remove('active');
+        extraFields.style.display = 'none';
+        title.textContent = 'Sign In to STrackerX';
+        submitBtn.textContent = 'Log In';
+    }
+}
 
-    userProfile = { name, handle, track, streak: 1 };
-    setSyncStorage('stracker_profile', userProfile);
+async function handleAuthSubmit() {
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value.trim();
+    const errorEl = document.getElementById('auth-error-msg');
+    errorEl.style.display = 'none';
 
-    matrixData = buildTrackData(track, {});
-    setSyncStorage('stracker_matrix', matrixData);
+    if (!email || !password) {
+        errorEl.textContent = 'Please enter both email and password.';
+        errorEl.style.display = 'block';
+        return;
+    }
 
-    const overlay = document.getElementById('onboarding-overlay');
-    if (overlay) overlay.style.display = 'none';
+    if (authMode === 'signup') {
+        const name = document.getElementById('auth-name').value.trim() || 'Learner';
+        let handle = document.getElementById('auth-handle').value.trim() || 'operator';
+        handle = handle.startsWith('@') ? handle : `@${handle}`;
+        const track = document.getElementById('auth-track').value;
 
-    loadUserInterface();
-    playTick(600);
+        if (!supabaseClient) {
+            // Local fallback if Supabase keys not entered
+            userProfile = { name, handle, track, streak: 1 };
+            matrixData = buildTrackData(track, {});
+            setSyncStorage('stracker_profile', userProfile);
+            setSyncStorage('stracker_matrix', matrixData);
+            document.getElementById('auth-overlay').style.display = 'none';
+            loadUserInterface();
+            return;
+        }
+
+        const { data: authData, error: authError } = await supabaseClient.auth.signUp({ email, password });
+        if (authError) {
+            errorEl.textContent = authError.message;
+            errorEl.style.display = 'block';
+            return;
+        }
+
+        const userId = authData.user?.id;
+        const initialMatrix = buildTrackData(track, {});
+
+        if (userId) {
+            await supabaseClient.from('profiles').insert({
+                id: userId,
+                username: handle,
+                full_name: name,
+                track: track,
+                syllabus_data: initialMatrix
+            });
+        }
+
+        userProfile = { id: userId, name, handle, track, streak: 1 };
+        matrixData = initialMatrix;
+        setSyncStorage('stracker_profile', userProfile);
+        setSyncStorage('stracker_matrix', matrixData);
+
+        document.getElementById('auth-overlay').style.display = 'none';
+        loadUserInterface();
+    } else {
+        // Sign In
+        if (!supabaseClient) {
+            userProfile = getSyncStorage('stracker_profile', { name: 'Learner', handle: '@learner', track: 'JEE' });
+            matrixData = getSyncStorage('stracker_matrix', buildTrackData('JEE', {}));
+            document.getElementById('auth-overlay').style.display = 'none';
+            loadUserInterface();
+            return;
+        }
+
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) {
+            errorEl.textContent = error.message;
+            errorEl.style.display = 'block';
+            return;
+        }
+
+        const userId = data.user.id;
+        const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+
+        if (profile) {
+            userProfile = {
+                id: profile.id,
+                name: profile.full_name,
+                handle: profile.username,
+                track: profile.track,
+                streak: profile.streak || 1
+            };
+            matrixData = profile.syllabus_data || buildTrackData(profile.track, {});
+            setSyncStorage('stracker_profile', userProfile);
+            setSyncStorage('stracker_matrix', matrixData);
+        }
+
+        document.getElementById('auth-overlay').style.display = 'none';
+        loadUserInterface();
+    }
+}
+
+function handleSignOut() {
+    if (confirm("Sign out of STrackerX?")) {
+        if (supabaseClient) supabaseClient.auth.signOut();
+        localStorage.removeItem('stracker_profile');
+        location.reload();
+    }
+}
+
+// Background Cloud Sync
+async function syncMatrixToCloud() {
+    if (!supabaseClient || !userProfile?.id) return;
+    try {
+        await supabaseClient
+            .from('profiles')
+            .update({ 
+                syllabus_data: matrixData,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', userProfile.id);
+    } catch (e) {
+        console.warn('Cloud sync error:', e);
+    }
 }
 
 function loadUserInterface() {
@@ -284,7 +390,6 @@ function loadUserInterface() {
     renderSubjectTabs();
     renderMatrixView();
     updateProgressAnalytics();
-    updateSquadDisplay();
 }
 
 function switchTab(viewId) {
@@ -414,6 +519,7 @@ function toggleMilestone(chapterId, key) {
     setSyncStorage('stracker_matrix', matrixData);
     renderMatrixView();
     updateProgressAnalytics();
+    syncMatrixToCloud(); // Save to cloud
 }
 
 // Custom Chapter Logic
@@ -459,6 +565,7 @@ function submitCustomChapter() {
     toggleAddModal(false);
     renderMatrixView();
     updateProgressAnalytics();
+    syncMatrixToCloud();
     playTick(720);
 }
 
@@ -468,9 +575,9 @@ function deleteCustomChapter(id) {
     setSyncStorage('stracker_matrix', matrixData);
     renderMatrixView();
     updateProgressAnalytics();
+    syncMatrixToCloud();
 }
 
-// Stream Switcher
 function handleStreamSwitch(newTrack) {
     if (newTrack === userProfile.track) return;
     userProfile.track = newTrack;
@@ -478,6 +585,7 @@ function handleStreamSwitch(newTrack) {
     setSyncStorage('stracker_profile', userProfile);
     setSyncStorage('stracker_matrix', matrixData);
     loadUserInterface();
+    syncMatrixToCloud();
     playTick(500);
 }
 
@@ -513,7 +621,6 @@ function updateProgressAnalytics() {
     if (chCount) chCount.textContent = `${totalChapters} Chapters`;
 }
 
-// Theme Engine
 function toggleTheme() {
     const current = document.documentElement.getAttribute('data-theme');
     const next = current === 'dark' ? 'light' : 'dark';
@@ -522,7 +629,7 @@ function toggleTheme() {
     playTick(500);
 }
 
-// Focus Sprint Timer
+// Sprint Timer
 let sprintTime = 25 * 60;
 let timerId = null;
 
@@ -567,108 +674,103 @@ function resetTimer() {
     if (btn) btn.textContent = 'START SPRINT';
 }
 
-// Modal Handlers
 function toggleModal(id, show) {
     const el = document.getElementById(id);
     if (el) el.style.display = show ? 'flex' : 'none';
     if (show) playTick(350);
 }
 
-// Squad Management Engine
+// Friends & Squad Functions
+async function handleAddFriend() {
+    const input = document.getElementById('add-friend-input');
+    let targetUsername = input ? input.value.trim() : '';
+    if (!targetUsername) return;
+    targetUsername = targetUsername.startsWith('@') ? targetUsername : `@${targetUsername}`;
+
+    if (!supabaseClient) {
+        alert("Connect Supabase API keys to enable live multiplayer.");
+        return;
+    }
+
+    try {
+        // Look up friend by username
+        const { data: friend, error } = await supabaseClient
+            .from('profiles')
+            .select('id, username')
+            .eq('username', targetUsername)
+            .single();
+
+        if (error || !friend) {
+            alert(`User ${targetUsername} not found.`);
+            return;
+        }
+
+        if (friend.id === userProfile.id) {
+            alert("You cannot add yourself.");
+            return;
+        }
+
+        // Send friend request
+        const { error: reqError } = await supabaseClient
+            .from('friendships')
+            .insert({
+                sender_id: userProfile.id,
+                receiver_id: friend.id,
+                status: 'pending'
+            });
+
+        if (reqError) {
+            alert("Friend request already sent or error occurred.");
+        } else {
+            alert(`Friend request sent to ${targetUsername}!`);
+            if (input) input.value = '';
+        }
+    } catch (e) {
+        alert("Error sending request.");
+    }
+}
+
 function handleCreateSquad() {
     const randomID = Math.floor(1000 + Math.random() * 9000);
-    currentSquadCode = `#SQUAD-${randomID}`;
-    setSyncStorage('stracker_squad', currentSquadCode);
-    updateSquadDisplay();
-    playTick(600);
-    alert(`Squad created! Your Room Code is: ${currentSquadCode}`);
+    const code = `#SQUAD-${randomID}`;
+    alert(`Squad Room Created: ${code}\nShare this code with your peers.`);
 }
 
 function handleJoinSquad() {
     const input = document.getElementById('join-squad-input');
     const code = input ? input.value.trim() : '';
     if (!code) {
-        alert("Please enter a valid Squad Code.");
+        alert("Please enter a room code.");
         return;
     }
-    currentSquadCode = code.startsWith('#') ? code : `#${code}`;
-    setSyncStorage('stracker_squad', currentSquadCode);
-    updateSquadDisplay();
-    playTick(600);
-    alert(`Connected to Squad: ${currentSquadCode}`);
+    alert(`Connected to Squad: ${code}`);
 }
 
-function leaveSquad() {
-    if (confirm("Disconnect from this squad?")) {
-        currentSquadCode = null;
-        localStorage.removeItem('stracker_squad');
-        updateSquadDisplay();
-    }
-}
-
-function updateSquadDisplay() {
-    const savedSquad = getSyncStorage('stracker_squad', null);
-    currentSquadCode = savedSquad;
-
-    const homeStat = document.getElementById('home-squad-stat');
-    const activeView = document.getElementById('squad-active-view');
-    const actionsBox = document.querySelector('.squad-actions-box');
-    const homeEmpty = document.getElementById('home-squad-empty');
-    const roomLabel = document.getElementById('current-room-code');
-
-    if (currentSquadCode) {
-        if (homeStat) homeStat.textContent = currentSquadCode;
-        if (roomLabel) roomLabel.textContent = currentSquadCode;
-        if (activeView) activeView.style.display = 'block';
-        if (actionsBox) actionsBox.style.display = 'none';
-        if (homeEmpty) {
-            homeEmpty.innerHTML = `
-                <p>Connected to <strong>${currentSquadCode}</strong>. Real-time peer sync will activate once cloud auth is connected.</p>
-                <button class="btn-ghost" onclick="switchTab('squad')">Open Squad Arena</button>
-            `;
-        }
-    } else {
-        if (homeStat) homeStat.textContent = 'Not in a squad';
-        if (activeView) activeView.style.display = 'none';
-        if (actionsBox) actionsBox.style.display = 'flex';
-        if (homeEmpty) {
-            homeEmpty.innerHTML = `
-                <p>No squad active. Create a squad or enter a team code to link real-time study sprint activity.</p>
-                <button class="btn-primary" onclick="switchTab('squad')">Initialize Squad Connection</button>
-            `;
-        }
-    }
-}
-
-// Feedback & Reporting Engine
-function submitFeedback() {
+// In-App Cloud Feedback
+async function submitFeedback() {
     const typeSelect = document.getElementById('report-type');
     const bodyInput = document.getElementById('report-body');
 
-    const type = typeSelect ? typeSelect.value : 'general';
-    const body = bodyInput ? bodyInput.value.trim() : '';
+    const category = typeSelect ? typeSelect.value : 'general';
+    const message = bodyInput ? bodyInput.value.trim() : '';
 
-    if (!body) {
-        alert("Please enter a description for your feedback.");
+    if (!message) {
+        alert("Please enter your message.");
         return;
     }
 
-    const feedbackPayload = {
-        id: `fb_${Date.now()}`,
-        user: userProfile ? userProfile.handle : 'anonymous',
-        type,
-        body,
-        timestamp: new Date().toISOString()
-    };
-
-    const existingFeedback = getSyncStorage('stracker_feedback_queue', []);
-    existingFeedback.push(feedbackPayload);
-    setSyncStorage('stracker_feedback_queue', existingFeedback);
+    if (supabaseClient) {
+        await supabaseClient.from('feedback_reports').insert({
+            user_id: userProfile?.id || null,
+            category,
+            message
+        });
+    }
 
     if (bodyInput) bodyInput.value = '';
     toggleModal('modal-feedback', false);
     playTick(750);
-    alert("Feedback received! Thank you for helping refine STrackerX.");
+    alert("Feedback received! Thank you for supporting STrackerX.");
 }
 
 // Backups & Reset
@@ -694,6 +796,7 @@ function importDataBackup(e) {
                 matrixData = data.matrixData;
                 setSyncStorage('stracker_profile', userProfile);
                 setSyncStorage('stracker_matrix', matrixData);
+                syncMatrixToCloud();
                 location.reload();
             }
         } catch (err) {
@@ -707,13 +810,7 @@ function promptSecureReset() {
     const confirmation = prompt("To permanently delete your account and erase all milestones, type 'DELETE':");
     if (confirmation === 'DELETE') {
         try { localStorage.clear(); } catch(e){}
-        try {
-            if (dbInstance) {
-                const tx = dbInstance.transaction(STORE_NAME, 'readwrite');
-                tx.objectStore(STORE_NAME).clear();
-            }
-        } catch(e){}
-        alert("Account purged successfully.");
+        alert("Local progress purged.");
         location.reload();
     }
 }
