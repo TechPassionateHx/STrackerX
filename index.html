@@ -3,376 +3,405 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>STrackerX ⚡</title>
-    <link rel="stylesheet" href="./style.css">
+    <title>STrackerX | High-Velocity Academic Execution</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Supabase JS Client & Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
 
-    <!-- Auth & Profile Modal -->
-    <div id="auth-overlay" class="modal-overlay" style="display: none;">
-        <div class="modal-card glass-panel auth-card">
-            <h2 id="auth-title">Sign In to STrackerX</h2>
-            <p class="subtext" id="auth-sub">Enter your username and password.</p>
-            
-            <div class="auth-toggle-row">
-                <button type="button" class="btn-toggle active" id="tab-login" onclick="setAuthMode('login')">Log In</button>
-                <button type="button" class="btn-toggle" id="tab-signup" onclick="setAuthMode('signup')">Create Account</button>
+    <!-- APP WRAPPER -->
+    <div class="app-container">
+
+        <!-- GLOBAL HEADER -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="brand-title">STracker<span>X</span></div>
+                <span id="track-badge" class="badge-tag">STREAM</span>
             </div>
-
-            <label for="auth-username">Username</label>
-            <input type="text" id="auth-username" placeholder="e.g. sahil_x" autocomplete="username">
-
-            <label for="auth-password">Password</label>
-            <input type="password" id="auth-password" placeholder="At least 6 characters" autocomplete="current-password">
-
-            <div id="signup-extra-fields" style="display: none; flex-direction: column; gap: 10px;">
-                <label for="auth-name">Display Name</label>
-                <input type="text" id="auth-name" placeholder="e.g. Sahil Raj">
-
-                <label for="auth-track">Academic Track</label>
-                <select id="auth-track">
-                    <option value="JEE">JEE (Class 11 & 12 PCM)</option>
-                    <option value="NEET">NEET (Class 11 & 12 PCB)</option>
-                    <option value="Class 12 PCM">Class 12 (PCM + Eng)</option>
-                    <option value="Class 12 PCB">Class 12 (PCB + Eng)</option>
-                    <option value="Class 11 PCM">Class 11 (PCM + Eng)</option>
-                    <option value="Class 11 PCB">Class 11 (PCB + Eng)</option>
-                    <option value="Class 10">Class 10 (Sci, Math, SST, Eng, Lang)</option>
-                    <option value="Class 9">Class 9 (Sci, Math, SST, Eng, Lang)</option>
-                    <option value="Class 8">Class 8 Foundation</option>
-                </select>
+            <div class="header-right">
+                <button type="button" class="icon-btn" onclick="toggleTheme()" title="Toggle Interface Mode">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                </button>
+                <div class="user-pill" onclick="switchTab('vault')">
+                    <div class="avatar" id="avatar-char">U</div>
+                    <span id="header-handle">@user</span>
+                </div>
             </div>
+        </header>
 
-            <button type="button" class="btn-primary btn-full" id="auth-submit-btn" onclick="handleAuthSubmit()">Continue</button>
-            <p id="auth-error-msg" class="subtext error-text" style="display: none;"></p>
+        <!-- MAIN VIEWPORTS CONTAINER -->
+        <main class="viewport">
+
+            <!-- 1. HUB VIEW -->
+            <section id="view-hub" class="screen-view active">
+                <div class="view-header">
+                    <div>
+                        <h2 id="home-greeting">Academic Overview</h2>
+                        <p class="subtext" id="directive-quote">"Small disciplines repeated with consistency every day lead to great achievements."</p>
+                    </div>
+                </div>
+
+                <!-- METRIC CARDS -->
+                <div class="stats-grid">
+                    <div class="metric-card glass-panel">
+                        <span class="subtext">Syllabus Progress</span>
+                        <div class="metric-val" id="home-matrix-stat">0% Cleared</div>
+                    </div>
+                    <div class="metric-card glass-panel">
+                        <span class="subtext">Active Streak</span>
+                        <div class="metric-val" id="home-streak" style="color: #ffaa00;">0 Day Streak</div>
+                    </div>
+                    <div class="metric-card glass-panel">
+                        <span class="subtext">Study Circle</span>
+                        <div class="metric-val" id="home-friends-stat" style="color: var(--accent, #00ffb2);">0 Connected</div>
+                    </div>
+                </div>
+
+                <!-- FOCUS ENGINE QUICK ACCESS -->
+                <div class="glass-panel quick-launch-box" style="margin-top: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div class="section-title" style="margin: 0;">TACTICAL POMODORO</div>
+                            <p class="subtext">25-minute verified focus sprint block</p>
+                        </div>
+                        <button type="button" class="btn-primary" onclick="switchTab('sprint')">LAUNCH</button>
+                    </div>
+                </div>
+
+                <!-- LIVE STUDY CIRCLE BANNER -->
+                <div class="glass-panel" style="margin-top: 15px;">
+                    <div class="section-title">CIRCLE STATUS</div>
+                    <p class="subtext" id="home-peer-status">Connect with peers to share verified study accountability.</p>
+                </div>
+            </section>
+
+            <!-- 2. SYLLABUS MATRIX VIEW -->
+            <section id="view-matrix" class="screen-view">
+                <div class="view-header">
+                    <div>
+                        <h2>Syllabus Matrix</h2>
+                        <p class="subtext">Comprehensive milestone tracking matrix</p>
+                    </div>
+                    <button type="button" class="btn-primary" onclick="toggleAddModal(true)">+ CHAPTER</button>
+                </div>
+
+                <!-- CLASS LEVEL SELECTORS (Dynamic) -->
+                <div class="class-selector" id="class-selector"></div>
+
+                <!-- SUBJECT SELECTOR TABS (Dynamic) -->
+                <div class="subject-tabs" id="subject-tabs"></div>
+
+                <!-- PROGRESS METER -->
+                <div class="glass-panel progress-card">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 6px;">
+                        <span id="matrix-milestone-count">0/0 Tasks</span>
+                        <span id="matrix-chapter-count">0 Chapters</span>
+                        <strong id="matrix-pct" style="color: var(--accent, #00ffb2);">0%</strong>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" id="matrix-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- MATRIX HEADER & CLASS PURGE ACTION -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; margin-bottom: 8px;">
+                    <div id="matrix-active-label" class="section-title" style="margin: 0;">Matrix Records</div>
+                    <button type="button" class="btn-ghost" onclick="promptDeleteCurrentClass()" style="color: #ff5555; font-size: 0.75rem; padding: 2px 8px;">Delete Class</button>
+                </div>
+
+                <!-- CHAPTER CONTAINER -->
+                <div id="matrix-container" class="chapters-wrapper"></div>
+            </section>
+
+            <!-- 3. FOCUS SPRINT VIEW -->
+            <section id="view-sprint" class="screen-view">
+                <div class="view-header">
+                    <div>
+                        <h2>Focus Sprint</h2>
+                        <p class="subtext">25-minute verified Pomodoro protocol</p>
+                    </div>
+                </div>
+
+                <div class="timer-display-wrap glass-panel">
+                    <div id="timer-display" class="timer-digits">25:00</div>
+                    <div class="timer-controls">
+                        <button type="button" id="btn-timer-toggle" class="btn-primary" onclick="toggleTimer()">START SPRINT</button>
+                        <button type="button" class="btn-ghost" onclick="resetTimer()">RESET</button>
+                    </div>
+                    <p class="subtext" style="text-align: center; margin-top: 15px; font-size: 0.75rem;">
+                        Streaks require continuous session completion without resetting.
+                    </p>
+                </div>
+            </section>
+
+            <!-- 4. PEERS VIEW -->
+            <section id="view-friends" class="screen-view">
+                <div class="view-header">
+                    <div>
+                        <h2>Study Peers</h2>
+                        <p class="subtext">Direct accountability network and live progress</p>
+                    </div>
+                </div>
+
+                <!-- ADD FRIEND BOX -->
+                <div class="glass-panel" style="margin-bottom: 15px;">
+                    <div class="section-title">CONNECT WITH PEER</div>
+                    <div style="display: flex; gap: 8px; margin-top: 8px;">
+                        <input type="text" id="add-friend-input" class="input-primary" placeholder="Enter username (e.g. rohit)" style="flex: 1;" />
+                        <button type="button" class="btn-primary" onclick="handleAddFriend()">CONNECT</button>
+                    </div>
+                </div>
+
+                <!-- INCOMING REQUESTS -->
+                <div class="section-title">INCOMING REQUESTS</div>
+                <div id="incoming-requests-container" style="margin-bottom: 15px;">
+                    <p class="subtext" style="padding: 10px;">No pending requests.</p>
+                </div>
+
+                <!-- ACCEPTED PEERS WITH LIVE ACTIONS -->
+                <div class="section-title">CONNECTED CIRCLE</div>
+                <div id="friends-list-container"></div>
+            </section>
+
+            <!-- 5. DEDICATED SQUAD COMMAND VIEW -->
+            <section id="view-squad" class="screen-view">
+                <div class="view-header">
+                    <div>
+                        <h2>Squad Room</h2>
+                        <p class="subtext">Real-time squad presence and tactical sync</p>
+                    </div>
+                    <div id="squad-status-badge" class="badge-tag">OFFLINE</div>
+                </div>
+
+                <!-- ACTIVE ROOM PANEL -->
+                <div id="squad-active-panel" style="display: none;">
+                    <div class="glass-panel" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span class="subtext" style="font-size: 0.75rem;">CURRENT SQUAD</span>
+                            <h3 id="squad-active-code" style="color: var(--accent, #00ffb2); margin: 2px 0 0 0; font-family: monospace;">#SQUAD-0000</h3>
+                        </div>
+                        <button type="button" class="btn-leave-squad" onclick="handleLeaveSquad()">LEAVE ROOM</button>
+                    </div>
+
+                    <!-- ROSTER HORIZONTAL BAR -->
+                    <div class="section-title">ACTIVE ROSTER</div>
+                    <div id="squad-live-roster" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px;"></div>
+
+                    <!-- TACTICAL BROADCAST FEED -->
+                    <div class="section-title" style="margin-top: 14px;">TACTICAL FEED</div>
+                    <div id="squad-pings-feed" class="glass-panel" style="min-height: 180px; max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 12px;">
+                        <p class="subtext">No directives sent yet. Broadcast one below.</p>
+                    </div>
+
+                    <!-- PREDEFINED ACTION PALETTE -->
+                    <div class="section-title" style="margin-top: 12px;">BROADCAST DIRECTIVE</div>
+                    <div id="quick-pings-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                        <button type="button" class="btn-ghost ping-btn" onclick="sendQuickPing('Starting a Sprint ⏱️')">⏱️ Starting Sprint</button>
+                        <button type="button" class="btn-ghost ping-btn" onclick="sendQuickPing('Finished a Chapter 🎯')">🎯 Finished Chapter</button>
+                        <button type="button" class="btn-ghost ping-btn" onclick="sendQuickPing('Locked in Deep Focus 🤫')">🤫 Deep Focus</button>
+                        <button type="button" class="btn-ghost ping-btn" onclick="sendQuickPing('Need Motivation 🔥')">🔥 Need Push</button>
+                        <button type="button" class="btn-ghost ping-btn" onclick="sendQuickPing('Taking 5m Break ☕')">☕ 5m Break</button>
+                        <button type="button" class="btn-ghost ping-btn" onclick="sendQuickPing('Streak Extended ⚡')">⚡ Streak Kept</button>
+                    </div>
+                    <div id="ping-cooldown-bar" style="display: none; margin-top: 8px; font-size: 0.75rem; color: var(--accent, #00ffb2); text-align: center;">
+                        Cooldown active... (<span id="cooldown-seconds">3</span>s)
+                    </div>
+                </div>
+
+                <!-- ROOM SELECTION PANEL (IF DISCONNECTED) -->
+                <div id="squad-join-panel" class="glass-panel" style="padding: 16px;">
+                    <h3 style="margin-top: 0;">Join or Create Squad</h3>
+                    <p class="subtext" style="margin-bottom: 14px;">Study alongside your peers in an isolated room with live synchronization.</p>
+                    <button type="button" class="btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="handleCreateSquad()">+ CREATE NEW SQUAD</button>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="dedicated-join-input" class="input-primary" placeholder="Enter Room Code (e.g. SQUAD-4321)" style="flex: 1;" />
+                        <button type="button" class="btn-ghost" onclick="handleJoinDedicatedSquad()">JOIN</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. VAULT & DATA CONTROL VIEW -->
+            <section id="view-vault" class="screen-view">
+                <div class="view-header">
+                    <div>
+                        <h2>Vault & Settings</h2>
+                        <p class="subtext">Personal identity and system state controls</p>
+                    </div>
+                </div>
+
+                <!-- SELF DATA PROFILE PANEL -->
+                <div class="glass-panel" style="margin-bottom: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                        <div class="avatar" id="vault-avatar-char" style="width: 48px; height: 48px; font-size: 1.2rem;">U</div>
+                        <div>
+                            <h3 id="vault-user-name" style="margin: 0;">Student</h3>
+                            <span id="vault-user-handle" class="subtext" style="color: var(--accent, #00ffb2);">@handle</span>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px;">
+                        <div>
+                            <span class="subtext" style="font-size: 0.7rem;">DAY STREAK</span>
+                            <div id="vault-stat-streak" style="font-size: 1.1rem; font-weight: bold; color: #ffaa00;">0 🔥</div>
+                        </div>
+                        <div>
+                            <span class="subtext" style="font-size: 0.7rem;">MILESTONES</span>
+                            <div id="vault-stat-milestones" style="font-size: 1.1rem; font-weight: bold; color: var(--accent, #00ffb2);">0</div>
+                        </div>
+                        <div>
+                            <span class="subtext" style="font-size: 0.7rem;">SQUAD STATUS</span>
+                            <div id="vault-stat-squad" style="font-size: 0.9rem; font-weight: bold; font-family: monospace; color: #888;">NONE</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STREAM CONFIGURATION -->
+                <div class="glass-panel" style="margin-bottom: 15px;">
+                    <div class="section-title">ACTIVE ACADEMIC STREAM</div>
+                    <p class="subtext" style="margin-bottom: 8px;">Switching streams updates your default syllabus matrix.</p>
+                    <select id="vault-stream-select" class="input-primary" onchange="handleStreamSwitch(this.value)">
+                        <option value="JEE">JEE (Classes 11 & 12 PCM)</option>
+                        <option value="NEET">NEET (Classes 11 & 12 PCB)</option>
+                        <option value="Class 12 PCM">Class 12 PCM + English</option>
+                        <option value="Class 12 PCB">Class 12 PCB + English</option>
+                        <option value="Class 11 PCM">Class 11 PCM + English</option>
+                        <option value="Class 11 PCB">Class 11 PCB + English</option>
+                        <option value="Class 10">Class 10 (Full Foundation Matrix)</option>
+                        <option value="Class 9">Class 9 (Full Foundation Matrix)</option>
+                        <option value="Class 8">Class 8 (Math & Science)</option>
+                    </select>
+                </div>
+
+                <!-- DATA BACKUP ROUTINES -->
+                <div class="glass-panel" style="margin-bottom: 15px;">
+                    <div class="section-title">DATA SOVEREIGNTY</div>
+                    <p class="subtext" style="margin-bottom: 8px;">Export or restore an offline JSON image of your account state.</p>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn-ghost" style="flex: 1;" onclick="exportDataBackup()">EXPORT BACKUP</button>
+                        <label class="btn-ghost" style="flex: 1; text-align: center; cursor: pointer; margin: 0;">
+                            IMPORT BACKUP
+                            <input type="file" id="import-file-input" style="display: none;" onchange="importDataBackup(event)" />
+                        </label>
+                    </div>
+                </div>
+
+                <!-- FEEDBACK & AUDIT -->
+                <div class="glass-panel" style="margin-bottom: 15px;">
+                    <div class="section-title">SUPPORT & DIAGNOSTICS</div>
+                    <button type="button" class="btn-ghost" style="width: 100%;" onclick="toggleModal('modal-feedback', true)">SUBMIT FEEDBACK OR BUG</button>
+                </div>
+
+                <!-- DANGER ZONE -->
+                <div class="glass-panel danger-zone">
+                    <div class="section-title" style="color: #ff5555;">DANGER ZONE</div>
+                    <button type="button" class="btn-ghost" style="width: 100%; margin-bottom: 8px;" onclick="handleSignOut()">SIGN OUT</button>
+                    <button type="button" class="btn-danger" style="width: 100%;" onclick="promptSecureReset()">CASCADE DELETE ACCOUNT</button>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- GLOBAL BOTTOM NAVIGATION -->
+        <nav class="bottom-nav">
+            <button type="button" class="nav-item active" onclick="switchTab('hub')">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                <span>Hub</span>
+            </button>
+            <button type="button" class="nav-item" onclick="switchTab('matrix')">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                <span>Matrix</span>
+            </button>
+            <button type="button" class="nav-item" onclick="switchTab('sprint')">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span>Sprint</span>
+            </button>
+            <button type="button" class="nav-item" onclick="switchTab('friends')">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                <span>Peers</span>
+            </button>
+            <button type="button" class="nav-item" onclick="switchTab('squad')">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                <span>Squad</span>
+            </button>
+            <button type="button" class="nav-item" onclick="switchTab('vault')">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                <span>Vault</span>
+            </button>
+        </nav>
+
+    </div>
+
+    <!-- MODAL: ADD CUSTOM CHAPTER -->
+    <div id="modal-add-chapter" class="modal-overlay" style="display: none;">
+        <div class="modal-box glass-panel">
+            <div class="section-title">ADD CUSTOM CHAPTER</div>
+            <p class="subtext" id="add-chapter-context-sub">Targeting Matrix</p>
+            <input type="text" id="custom-chapter-input" class="input-primary" placeholder="Chapter name" style="margin: 12px 0;" />
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-primary" style="flex: 1;" onclick="submitCustomChapter()">SAVE</button>
+                <button type="button" class="btn-ghost" style="flex: 1;" onclick="toggleAddModal(false)">CANCEL</button>
+            </div>
         </div>
     </div>
 
-    <!-- Modal: Release Changelog -->
-    <div id="modal-changelog" class="modal-overlay" style="display: none;">
-        <div class="modal-card glass-panel modal-scrollable">
-            <div class="modal-header-row">
-                <h2>Release Notes 🚀</h2>
-                <button type="button" class="btn-close" onclick="toggleModal('modal-changelog', false)">✕</button>
-            </div>
-            <div class="guide-content">
-                <div class="guide-item">
-                    <h4>v0.2.0 Updates</h4>
-                    <ul style="margin-top: 8px; padding-left: 18px; line-height: 1.6;">
-                        <li><strong>Dynamic Curricula:</strong> Class 9 added; English, Social Science, Hindi/Sanskrit added across streams.</li>
-                        <li><strong>Fixed Senior/Junior Milestones:</strong> Class 11/12 maintains 6 milestones even if switching views.</li>
-                        <li><strong>Social Hub:</strong> Incoming friend requests can now be accepted or declined.</li>
-                        <li><strong>Functional Squads:</strong> Live room participants and roster tracking.</li>
-                        <li><strong>Verified Streaks:</strong> Complete 25-minute Pomodoro sessions to increment study streaks.</li>
-                        <li><strong>Full Cloud Cascade Deletion:</strong> Deleting account purges auth credentials completely.</li>
-                    </ul>
-                </div>
-            </div>
-            <button type="button" class="btn-primary btn-full" onclick="toggleModal('modal-changelog', false)">Close</button>
-        </div>
-    </div>
-
-    <!-- Modal: App Guide -->
-    <div id="modal-guide" class="modal-overlay" style="display: none;">
-        <div class="modal-card glass-panel modal-scrollable">
-            <div class="modal-header-row">
-                <h2>App Guide 📖</h2>
-                <button type="button" class="btn-close" onclick="toggleModal('modal-guide', false)">✕</button>
-            </div>
-            <div class="guide-content">
-                <div class="guide-item">
-                    <h4>Milestone Checklist</h4>
-                    <p>• <strong>Senior (Classes 11–12):</strong> Notes, Module, DPPs, S-Notes, Rev 1, Rev 2.</p>
-                    <p>• <strong>Foundation (Classes 8–10):</strong> Notes, Exercises, Practice, Revision.</p>
-                </div>
-                <div class="guide-item">
-                    <h4>Streaks & Focus Sprints</h4>
-                    <p>Complete a full 25-minute sprint to advance your daily focus streak.</p>
-                </div>
-            </div>
-            <button type="button" class="btn-primary btn-full" onclick="toggleModal('modal-guide', false)">Close Guide</button>
-        </div>
-    </div>
-
-    <!-- Modal: Feedback & Bug Report -->
+    <!-- MODAL: FEEDBACK & REPORTS -->
     <div id="modal-feedback" class="modal-overlay" style="display: none;">
-        <div class="modal-card glass-panel">
-            <div class="modal-header-row">
-                <h2>Send Feedback 💬</h2>
-                <button type="button" class="btn-close" onclick="toggleModal('modal-feedback', false)">✕</button>
-            </div>
-            <p class="subtext">Feedback is delivered directly to the project database.</p>
-            
-            <label for="report-type">Category</label>
-            <select id="report-type">
-                <option value="bug">Bug / Execution Issue</option>
-                <option value="syllabus">Syllabus / Chapter Error</option>
+        <div class="modal-box glass-panel">
+            <div class="section-title">FEEDBACK & SYSTEM AUDIT</div>
+            <select id="report-type" class="input-primary" style="margin: 10px 0;">
+                <option value="bug">Report a Bug</option>
                 <option value="feature">Feature Request</option>
+                <option value="curriculum">Curriculum Correction</option>
                 <option value="general">General Feedback</option>
             </select>
-
-            <label for="report-body">Message</label>
-            <textarea id="report-body" rows="4" placeholder="Describe the bug or feature proposal..."></textarea>
-
-            <div class="modal-actions">
-                <button type="button" class="btn-ghost" onclick="toggleModal('modal-feedback', false)">Cancel</button>
-                <button type="button" class="btn-primary" onclick="submitFeedback()">Send</button>
+            <textarea id="report-body" class="input-primary" rows="4" placeholder="Describe in detail..." style="resize: none; margin-bottom: 12px;"></textarea>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-primary" style="flex: 1;" onclick="submitFeedback()">TRANSMIT</button>
+                <button type="button" class="btn-ghost" style="flex: 1;" onclick="toggleModal('modal-feedback', false)">CANCEL</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal: Add Custom Chapter -->
-    <div id="modal-add-chapter" class="modal-overlay" style="display: none;">
-        <div class="modal-card glass-panel">
-            <h2>Add Custom Chapter</h2>
-            <p class="subtext" id="add-chapter-context-sub">Targeting current subject</p>
-            
-            <label for="custom-chapter-input">Chapter Name</label>
-            <input type="text" id="custom-chapter-input" placeholder="e.g., Advanced Fluid Dynamics">
-            
-            <div class="modal-actions">
-                <button type="button" class="btn-ghost" onclick="toggleAddModal(false)">Cancel</button>
-                <button type="button" class="btn-primary" onclick="submitCustomChapter()">Add Chapter</button>
-            </div>
-        </div>
-    </div>
+    <!-- AUTHENTICATION OVERLAY MODAL -->
+    <div id="auth-overlay" class="modal-overlay" style="display: none;">
+        <div class="modal-box glass-panel" style="max-width: 360px;">
+            <div class="brand-title" style="text-align: center; margin-bottom: 4px;">STracker<span>X</span></div>
+            <p class="subtext" style="text-align: center; margin-bottom: 15px;" id="auth-title">Sign In to STrackerX</p>
 
-    <!-- Top App Navigation Bar -->
-    <header class="top-bar">
-        <div class="brand-zone">
-            <span class="brand-logo">STrackerX</span>
-            <span id="track-badge" class="badge-tag">TRACK</span>
-        </div>
-        
-        <div class="top-actions">
-            <button type="button" class="theme-toggle-btn" onclick="toggleModal('modal-guide', true)" title="App Guide">❓</button>
-            <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Theme">🌓</button>
-            <div class="user-chip" onclick="switchTab('vault')">
-                <span class="user-avatar" id="avatar-char">U</span>
-                <span class="user-handle" id="header-handle">@user</span>
-            </div>
-        </div>
-    </header>
-
-    <!-- Main Viewport -->
-    <main class="content-viewport">
-        
-        <!-- Screen 1: Home Feed Hub -->
-        <section id="view-home" class="screen-view active">
-            <div class="hero-card glass-panel">
-                <div class="hero-greetings">
-                    <span class="hero-sub">COMMAND CENTER</span>
-                    <h2 id="home-greeting">Welcome back</h2>
-                </div>
-                <div class="streak-counter">
-                    <span>🔥</span>
-                    <span id="home-streak">0 Day Streak</span>
-                </div>
+            <div class="auth-tabs" style="display: flex; gap: 6px; margin-bottom: 12px;">
+                <button type="button" id="tab-login" class="tab-btn active" style="flex: 1;" onclick="setAuthMode('login')">Log In</button>
+                <button type="button" id="tab-signup" class="tab-btn" style="flex: 1;" onclick="setAuthMode('signup')">Sign Up</button>
             </div>
 
-            <!-- Focus Sprint Bar -->
-            <div class="focus-pill glass-panel">
-                <div class="focus-info">
-                    <span class="pulse-dot"></span>
-                    <span id="timer-display">25:00</span>
-                </div>
-                <div class="focus-controls">
-                    <button type="button" id="btn-timer-toggle" onclick="toggleTimer()">START SPRINT</button>
-                    <button type="button" onclick="resetTimer()">↺</button>
-                </div>
-            </div>
-
-            <!-- Shortcuts -->
-            <div class="quick-grid">
-                <div class="quick-card glass-panel" onclick="switchTab('matrix')">
-                    <span class="card-icon">📊</span>
-                    <div class="card-meta">
-                        <h4>Matrix</h4>
-                        <p id="home-matrix-stat">0% Cleared</p>
-                    </div>
-                </div>
-                <div class="quick-card glass-panel" onclick="switchTab('friends')">
-                    <span class="card-icon">👥</span>
-                    <div class="card-meta">
-                        <h4>Friends</h4>
-                        <p id="home-friends-stat">0 Connected</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Squad & Peers Status Card -->
-            <div class="section-title">SQUAD &amp; PEERS</div>
-            <div class="feed-item glass-panel" id="home-peer-card">
-                <div class="feed-info">
-                    <p id="home-peer-status">Add friends by their username to build study consistency together.</p>
-                </div>
-            </div>
-
-            <!-- Directive Quote (Dynamic) -->
-            <div class="directive-box glass-panel">
-                <div class="directive-tag">DAILY DIRECTIVE</div>
-                <p id="directive-quote">"Small disciplines repeated with consistency lead to great achievements."</p>
-            </div>
-        </section>
-
-        <!-- Screen 2: Matrix View -->
-        <section id="view-matrix" class="screen-view">
-            <div class="matrix-header-card glass-panel">
-                <div class="progress-labels">
-                    <span id="matrix-active-label">Syllabus Completion</span>
-                    <span id="matrix-pct" class="glow-text">0%</span>
-                </div>
-                <div class="progress-track">
-                    <div class="progress-fill" id="matrix-fill"></div>
-                </div>
-                <div class="metrics-row">
-                    <span id="matrix-milestone-count">0/0 Tasks</span>
-                    <span id="matrix-chapter-count">0 Chapters</span>
-                </div>
-            </div>
-
-            <div class="class-selector" id="class-selector" style="display: none;"></div>
-            
-            <div class="subject-bar-row">
-                <nav class="subject-tabs" id="subject-tabs"></nav>
-                <button type="button" class="btn-add-chapter" onclick="toggleAddModal(true)" title="Add Custom Chapter">➕</button>
-            </div>
-
-            <div class="matrix-list" id="matrix-container"></div>
-        </section>
-
-        <!-- Screen 3: Friends & Squad -->
-        <section id="view-friends" class="screen-view">
-            <div class="squad-header glass-panel">
-                <div class="squad-title-row">
-                    <h3>FRIENDS &amp; SQUADS</h3>
-                    <span class="status-indicator">CLOUD LIVE</span>
-                </div>
-                <p class="subtext">Add study partners by username or join squad rooms.</p>
-            </div>
-
-            <!-- Add Friend -->
-            <div class="squad-actions-box glass-panel">
-                <h4>Add Friend by Username</h4>
-                <div class="input-inline">
-                    <input type="text" id="add-friend-input" placeholder="Enter username (e.g. sahil_x)">
-                    <button type="button" class="btn-primary" onclick="handleAddFriend()">Send</button>
-                </div>
-            </div>
-
-            <!-- Incoming Friend Requests -->
-            <div class="section-title">INCOMING REQUESTS</div>
-            <div id="incoming-requests-container" class="leaderboard-list">
-                <p class="subtext" style="padding: 10px;">No pending requests.</p>
-            </div>
-
-            <!-- Squad Rooms -->
-            <div class="squad-actions-box glass-panel">
-                <h4>Squad Room</h4>
-                <div class="input-inline">
-                    <input type="text" id="join-squad-input" placeholder="Room code (e.g. #TITANS)">
-                    <button type="button" class="btn-primary" onclick="handleJoinSquad()">Join</button>
-                </div>
-                <div class="divider"><span>OR</span></div>
-                <button type="button" class="btn-ghost btn-full" onclick="handleCreateSquad()">Create New Squad Room</button>
-                
-                <div id="active-squad-box" style="display: none; margin-top: 15px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <div class="section-title" id="active-squad-title" style="margin: 0;">ACTIVE SQUAD</div>
-        <button type="button" class="btn-ghost" onclick="handleLeaveSquad()" style="padding: 4px 10px; font-size: 0.8rem; color: #ff5555;">LEAVE</button>
-    </div>
-    <div id="squad-members-list"></div>
-</div>
-
-
-            <!-- Friends List -->
-            <div class="section-title">YOUR STUDY CIRCLE</div>
-            <div class="leaderboard-list" id="friends-list-container">
-                <div class="squad-card glass-panel">
-                    <div class="user-meta">
-                        <p>No friends added yet.</p>
-                        <span>Share your username with friends to study together.</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Screen 4: Vault & Settings -->
-        <section id="view-vault" class="screen-view">
-            <div class="vault-card glass-panel">
-                <h3>Track Configuration</h3>
-                <p class="subtext">Switch streams without losing milestone progress.</p>
-                <div class="track-switch-box">
-                    <label for="vault-stream-select">Change Stream</label>
-                    <select id="vault-stream-select" onchange="handleStreamSwitch(this.value)">
-                        <option value="JEE">JEE (11 + 12 PCM)</option>
-                        <option value="NEET">NEET (11 + 12 PCB)</option>
-                        <option value="Class 12 PCM">Class 12 (PCM + Eng)</option>
-                        <option value="Class 12 PCB">Class 12 (PCB + Eng)</option>
-                        <option value="Class 11 PCM">Class 11 (PCM + Eng)</option>
-                        <option value="Class 11 PCB">Class 11 (PCB + Eng)</option>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div id="signup-extra-fields" style="display: none; flex-direction: column; gap: 10px;">
+                    <input type="text" id="auth-name" class="input-primary" placeholder="Full Name" />
+                    <select id="auth-track" class="input-primary">
+                        <option value="JEE">JEE Track</option>
+                        <option value="NEET">NEET Track</option>
+                        <option value="Class 11 PCM">Class 11 PCM</option>
+                        <option value="Class 11 PCB">Class 11 PCB</option>
+                        <option value="Class 12 PCM">Class 12 PCM</option>
+                        <option value="Class 12 PCB">Class 12 PCB</option>
                         <option value="Class 10">Class 10 Foundation</option>
                         <option value="Class 9">Class 9 Foundation</option>
                         <option value="Class 8">Class 8 Foundation</option>
                     </select>
                 </div>
+
+                <input type="text" id="auth-username" class="input-primary" placeholder="Username (e.g. rohit)" />
+                <input type="password" id="auth-password" class="input-primary" placeholder="Password" />
+
+                <div id="auth-error-msg" class="subtext" style="color: #ff5555; display: none;"></div>
+
+                <button type="button" id="auth-submit-btn" class="btn-primary" style="margin-top: 6px;" onclick="handleAuthSubmit()">Log In</button>
             </div>
+        </div>
+    </div>
 
-            <div class="vault-card glass-panel">
-                <h3>Help &amp; Support</h3>
-                <p class="subtext">Review how to use STrackerX or send your feedback.</p>
-                <div class="btn-group">
-                    <button type="button" class="btn-ghost btn-full" onclick="toggleModal('modal-guide', true)">OPEN APP GUIDE</button>
-                    <button type="button" class="btn-ghost btn-full" onclick="toggleModal('modal-changelog', true)">RELEASE NOTES (v0.2.0)</button>
-                    <button type="button" class="btn-ghost btn-full" onclick="toggleModal('modal-feedback', true)">SEND FEEDBACK / REPORT</button>
-                </div>
-            </div>
-
-            <div class="vault-card glass-panel">
-                <h3>Backup &amp; Restore</h3>
-                <p class="subtext">Export local backup JSON or restore onto another device.</p>
-                <div class="btn-group">
-                    <button type="button" class="btn-primary btn-full" onclick="exportDataBackup()">EXPORT BACKUP (.JSON)</button>
-                    <label class="btn-ghost btn-full file-label">
-                        RESTORE BACKUP (.JSON)
-                        <input type="file" id="import-file" accept=".json" onchange="importDataBackup(event)" style="display: none;">
-                    </label>
-                </div>
-            </div>
-
-            <div class="vault-card glass-panel danger-zone">
-                <h3>Account Session</h3>
-                <p class="subtext">Sign out or completely delete account from cloud and device.</p>
-                <div class="btn-group">
-                    <button type="button" class="btn-ghost btn-full" onclick="handleSignOut()">SIGN OUT</button>
-                    <button type="button" class="btn-danger btn-full" onclick="promptSecureReset()">DELETE ACCOUNT &amp; RESET</button>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- Bottom Navigation Bar -->
-    <nav class="bottom-nav glass-panel">
-        <button type="button" class="nav-item active" onclick="switchTab('home')">
-            <span class="nav-icon">🏠</span>
-            <span class="nav-label">Hub</span>
-        </button>
-        <button type="button" class="nav-item" onclick="switchTab('matrix')">
-            <span class="nav-icon">📊</span>
-            <span class="nav-label">Matrix</span>
-        </button>
-        <button type="button" class="nav-item" onclick="switchTab('friends')">
-            <span class="nav-icon">👥</span>
-            <span class="nav-label">Friends</span>
-        </button>
-        <button type="button" class="nav-item" onclick="switchTab('vault')">
-            <span class="nav-icon">⚙️</span>
-            <span class="nav-label">Vault</span>
-        </button>
-    </nav>
-
-    <script src="./script.js" defer></script>
+    <!-- ENGINE SCRIPT -->
+    <script src="script.js"></script>
 </body>
 </html>
