@@ -46,7 +46,7 @@
                 <!-- METRIC CARDS -->
                 <div class="stats-grid">
                     <div class="metric-card glass-panel">
-                        <span class="subtext">Syllabus Progress</span>
+                        <span class="subtext">Weighted Progress</span>
                         <div class="metric-val" id="home-matrix-stat">0% Cleared</div>
                     </div>
                     <div class="metric-card glass-panel">
@@ -56,6 +56,18 @@
                     <div class="metric-card glass-panel">
                         <span class="subtext">Study Circle</span>
                         <div class="metric-val" id="home-friends-stat" style="color: var(--accent, #00ffb2);">0 Connected</div>
+                    </div>
+                </div>
+
+                <!-- TASKY HUB DIRECTIVES TABLE -->
+                <div class="glass-panel" style="margin-top: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div class="section-title" style="margin: 0;">⚡ TASKY STRATEGIC DIRECTIVES</div>
+                        <span class="badge-tag" id="tasky-count-badge">0 TASKS</span>
+                    </div>
+                    <p class="subtext" style="margin-bottom: 10px;">Spaced-repetition & prerequisite prioritized execution queue.</p>
+                    <div id="tasky-hub-container">
+                        <p class="subtext" style="padding: 10px 0;">All scheduled revisions and practices are up to date! Pick a new chapter.</p>
                     </div>
                 </div>
 
@@ -70,10 +82,11 @@
                     </div>
                 </div>
 
-                <!-- LIVE STUDY CIRCLE BANNER -->
+                <!-- LIVE STUDY CIRCLE FEED ON HOME -->
                 <div class="glass-panel" style="margin-top: 15px;">
-                    <div class="section-title">CIRCLE STATUS</div>
-                    <p class="subtext" id="home-peer-status">Connect with peers to share verified study accountability.</p>
+                    <div class="section-title">STUDY CIRCLE LIVE FEED</div>
+                    <p class="subtext" id="home-peer-status" style="margin-bottom: 8px;">Connect with peers to share verified study accountability.</p>
+                    <div id="home-peer-feed-container" style="display: flex; flex-direction: column; gap: 6px;"></div>
                 </div>
             </section>
 
@@ -82,9 +95,8 @@
                 <div class="view-header">
                     <div>
                         <h2>Syllabus Matrix</h2>
-                        <p class="subtext">Comprehensive milestone tracking matrix</p>
+                        <p class="subtext">Comprehensive weighted milestone matrix</p>
                     </div>
-                    <!-- Moved Class Deletion to top options -->
                     <button type="button" class="btn-ghost" onclick="promptDeleteCurrentClass()" style="color: #ff5555; font-size: 0.75rem; padding: 4px 8px;">Delete Class</button>
                 </div>
 
@@ -114,6 +126,12 @@
 
                 <!-- CHAPTER CONTAINER -->
                 <div id="matrix-container" class="chapters-wrapper"></div>
+
+                <!-- TASKY FLOATING ACTION BUTTON (FAB) -->
+                <button type="button" id="tasky-fab" class="tasky-floating-btn" onclick="toggleTaskyModal(true)">
+                    <span class="tasky-fab-icon">⚡</span>
+                    <span id="tasky-fab-label">Tasky (0)</span>
+                </button>
             </section>
 
             <!-- 3. FOCUS SPRINT VIEW -->
@@ -322,7 +340,6 @@
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 <span>Peers</span>
             </button>
-            <!-- Clean Squad Icon (Shield with Group of 3 Users) -->
             <button type="button" class="nav-item" onclick="switchTab('squad')">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><circle cx="12" cy="11" r="3"></circle></svg>
                 <span>Squad</span>
@@ -333,6 +350,19 @@
             </button>
         </nav>
 
+    </div>
+
+    <!-- MODAL: TASKY DIRECTIVES FLYOUT -->
+    <div id="modal-tasky" class="modal-overlay" style="display: none;">
+        <div class="modal-box glass-panel" style="max-height: 85vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div class="section-title" style="margin: 0;">⚡ TASKY STRATEGIC CO-PILOT</div>
+                <button type="button" class="btn-ghost" onclick="toggleTaskyModal(false)" style="padding: 2px 8px;">✕</button>
+            </div>
+            <p class="subtext" style="margin-bottom: 12px;">Active execution tasks sorted by spaced decay & prerequisites.</p>
+            <div id="tasky-modal-container" style="overflow-y: auto; display: flex; flex-direction: column; gap: 8px; flex: 1;"></div>
+            <button type="button" class="btn-primary" style="margin-top: 12px;" onclick="toggleTaskyModal(false)">RETURN TO MATRIX</button>
+        </div>
     </div>
 
     <!-- MODAL: ADD CUSTOM CHAPTER -->
