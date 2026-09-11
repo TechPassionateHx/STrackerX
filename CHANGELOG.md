@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.0.0] - 2026-09-11 - Initial Production Release
+
+### Added
+- **Tasky Strategic Co-Pilot Engine**: Deterministic recommendation engine scheduling tasks via spaced-decay rules and pedagogical prerequisite trees (e.g., GOC gating Hydrocarbons/Haloalkanes).
+- **Tasky Floating Action Button (FAB) & Modal**: Floating quick-access trigger on the Matrix screen alongside a primary directives queue on the Hub.
+- **Directive Swapping Engine**: Interactive swap action (`⇄`) on Tasky items allowing students to defer tasks and surface alternative subject priorities.
+- **Weighted Progress Analytics**: Replaced binary completion metrics with academic weight multipliers (Notes 15%, Modules 25%, DPPs 25%, S-Notes 10%, Rev1 15%, Rev2 10%).
+- **Live Circle Activity Feed on Hub**: Real-time ticker on the Home dashboard displaying the latest 4 milestone actions across connected peers.
+- **Dedicated Squad Command Screen**: Isolated Squad room tab with real-time participation indicators, session synchronization, and room exit management.
+- **Squad Member Live Progress Feed**: Connected squad member roster rows to the profile activity ledger to display live milestone progress for all active peers.
+- **Enhanced Directive Attribution**: Tactical pings now display sender names, handles, and an amber `YOU` badge for current-user transmissions.
+- **Persistent Epoch-Based Pomodoro Timer**: Upgraded sprint countdown to evaluate against Unix epoch timestamps, maintaining active countdown state across page refreshes and tab switches.
+- **Tactical Quick-Pings**: Built a low-distraction broadcast system allowing students to send preset academic status directives without open free-text chat.
+- **Rate-Limiting Cooldown Engine**: Applied a 3-second hardware cooldown timer disabling consecutive transmissions to prevent notification spamming.
+- **Activity Feed & Undo Support**: Implemented a transactional history stack for milestone toggles; untoggling an action rolls peer activity back to the previous verified milestone.
+- **Self Analytics in Profile**: Enhanced the Vault profile view with streak counts, milestone totals, and current squad membership data.
+- **Class Stream Deletion**: Added granular stream management enabling users to prune entire unused grade levels from their syllabus matrix.
+
+### Fixed
+- **Matrix Action Placement**: Repositioned the `+ CHAPTER` button to the primary chapter grid header and moved `Delete Class` into secondary view-header options.
+- **Navigation Icon Collision**: Resolved overlapping SVG paths on the bottom navigation squad tab with a clean shield icon.
+- **Ghost Squad Roster State**: Integrated Supabase Realtime subscriptions to immediately remove exited members across all connected client viewports and drop empty rooms.
+- **Friend Activity Desynchronization**: Resolved activity logging inconsistencies across study circles by standardizing the `activity_history` JSON structure.
+
+
+
 ## [0.3.1] - 2026-09-11
 
 ### Added
