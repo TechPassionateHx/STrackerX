@@ -84,7 +84,8 @@
                         <h2>Syllabus Matrix</h2>
                         <p class="subtext">Comprehensive milestone tracking matrix</p>
                     </div>
-                    <button type="button" class="btn-primary" onclick="toggleAddModal(true)">+ CHAPTER</button>
+                    <!-- Moved Class Deletion to top options -->
+                    <button type="button" class="btn-ghost" onclick="promptDeleteCurrentClass()" style="color: #ff5555; font-size: 0.75rem; padding: 4px 8px;">Delete Class</button>
                 </div>
 
                 <!-- CLASS LEVEL SELECTORS (Dynamic) -->
@@ -105,10 +106,10 @@
                     </div>
                 </div>
 
-                <!-- MATRIX HEADER & CLASS PURGE ACTION -->
+                <!-- MATRIX HEADER WITH + CHAPTER ACTION -->
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; margin-bottom: 8px;">
                     <div id="matrix-active-label" class="section-title" style="margin: 0;">Matrix Records</div>
-                    <button type="button" class="btn-ghost" onclick="promptDeleteCurrentClass()" style="color: #ff5555; font-size: 0.75rem; padding: 2px 8px;">Delete Class</button>
+                    <button type="button" class="btn-primary" onclick="toggleAddModal(true)" style="padding: 4px 10px; font-size: 0.75rem;">+ CHAPTER</button>
                 </div>
 
                 <!-- CHAPTER CONTAINER -->
@@ -131,7 +132,7 @@
                         <button type="button" class="btn-ghost" onclick="resetTimer()">RESET</button>
                     </div>
                     <p class="subtext" style="text-align: center; margin-top: 15px; font-size: 0.75rem;">
-                        Streaks require continuous session completion without resetting.
+                        Sessions persist across page refreshes. Complete the full sprint to advance streaks.
                     </p>
                 </div>
             </section>
@@ -185,12 +186,12 @@
                         <button type="button" class="btn-leave-squad" onclick="handleLeaveSquad()">LEAVE ROOM</button>
                     </div>
 
-                    <!-- ROSTER HORIZONTAL BAR -->
-                    <div class="section-title">ACTIVE ROSTER</div>
-                    <div id="squad-live-roster" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px;"></div>
+                    <!-- ROSTER BAR WITH REAL-TIME MEMBER ACTIVITY -->
+                    <div class="section-title">ACTIVE ROSTER & LIVE WORK</div>
+                    <div id="squad-live-roster" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px;"></div>
 
                     <!-- TACTICAL BROADCAST FEED -->
-                    <div class="section-title" style="margin-top: 14px;">TACTICAL FEED</div>
+                    <div class="section-title">TACTICAL FEED</div>
                     <div id="squad-pings-feed" class="glass-panel" style="min-height: 180px; max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 12px;">
                         <p class="subtext">No directives sent yet. Broadcast one below.</p>
                     </div>
@@ -210,7 +211,7 @@
                     </div>
                 </div>
 
-                <!-- ROOM SELECTION PANEL (IF DISCONNECTED) -->
+                <!-- ROOM SELECTION PANEL -->
                 <div id="squad-join-panel" class="glass-panel" style="padding: 16px;">
                     <h3 style="margin-top: 0;">Join or Create Squad</h3>
                     <p class="subtext" style="margin-bottom: 14px;">Study alongside your peers in an isolated room with live synchronization.</p>
@@ -321,8 +322,9 @@
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 <span>Peers</span>
             </button>
+            <!-- Clean Squad Icon (Shield with Group of 3 Users) -->
             <button type="button" class="nav-item" onclick="switchTab('squad')">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><circle cx="12" cy="11" r="3"></circle></svg>
                 <span>Squad</span>
             </button>
             <button type="button" class="nav-item" onclick="switchTab('vault')">
