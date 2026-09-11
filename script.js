@@ -1,4 +1,4 @@
-// --- STrackerX v0.2.0 Engine ---
+// --- STrackerX v0.3.0 Engine ---
 const SUPABASE_URL = "https://hndzaifthicnvaahhrxf.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_5fOfHVlm1U4DbVhSkyn1zQ_a6ss3Jwm"; 
 
@@ -219,6 +219,10 @@ let activeSubject = "Physics";
 let currentUserSession = null;
 let authMode = 'login';
 let activeSquadCode = null;
+let realtimeSquadChannel = null;
+let realtimePingChannel = null;
+let pingCooldownTimer = null;
+let pingCooldownRemaining = 0;
 
 function buildTrackData(track, existingData) {
     let targetClasses = [];
@@ -304,6 +308,10 @@ async function bootApp() {
         }
         loadUserInterface();
         checkAndRenderSocial();
+        if (activeSquadCode) {
+            setupSquadRealtime(activeSquadCode);
+            fetchSquadPings(activeSquadCode);
+        }
     }
 }
 
@@ -364,7 +372,7 @@ async function handleAuthSubmit() {
         const initialMatrix = buildTrackData(track, {});
 
         if (!supabaseClient) {
-            userProfile = { name, handle, track, streak: 0, last_study_date: null };
+            userProfile = { name, handle, track, streak: 0, last_study_date: null, activity_history: [] };
             matrixData = initialMatrix;
             setSyncStorage('stracker_profile', userProfile);
             setSyncStorage('stracker_matrix', matrixData);
@@ -398,11 +406,11 @@ async function handleAuthSubmit() {
         if (userId) {
             await supabaseClient
                 .from('profiles')
-                .update({ syllabus_data: initialMatrix })
+                .update({ syllabus_data: initialMatrix, activity_history: [] })
                 .eq('id', userId);
         }
 
-        userProfile = { id: userId, name, handle, track, streak: 0, last_study_date: null };
+        userProfile = { id: userId, name, handle, track, streak: 0, last_study_date: null, activity_history: [] };
         matrixData = initialMatrix;
         setSyncStorage('stracker_profile', userProfile);
         setSyncStorage('stracker_matrix', matrixData);
@@ -436,7 +444,8 @@ async function handleAuthSubmit() {
                 handle: profile.username,
                 track: profile.track,
                 streak: profile.streak || 0,
-                last_study_date: profile.last_study_date || null
+                last_study_date: profile.last_study_date || null,
+                activity_history: profile.activity_history || []
             };
             matrixData = profile.syllabus_data || buildTrackData(profile.track, {});
             setSyncStorage('stracker_profile', userProfile);
@@ -453,6 +462,7 @@ function handleSignOut() {
     if (confirm("Sign out of STrackerX?")) {
         if (supabaseClient) supabaseClient.auth.signOut();
         localStorage.removeItem('stracker_profile');
+        localStorage.removeItem('stracker_active_squad');
         location.reload();
     }
 }
@@ -464,6 +474,7 @@ async function syncMatrixToCloud() {
             .from('profiles')
             .update({ 
                 syllabus_data: matrixData,
+                activity_history: userProfile.activity_history || [],
                 updated_at: new Date().toISOString()
             })
             .eq('id', userProfile.id);
@@ -489,6 +500,19 @@ function loadUserInterface() {
     if (vaultSelect) vaultSelect.value = userProfile.track;
     if (homeStreak) homeStreak.textContent = `${userProfile.streak || 0} Day Streak`;
 
+    // Self Data in Vault View
+    const vName = document.getElementById('vault-user-name');
+    const vHandle = document.getElementById('vault-user-handle');
+    const vAvatar = document.getElementById('vault-avatar-char');
+    const vStreak = document.getElementById('vault-stat-streak');
+    const vSquad = document.getElementById('vault-stat-squad');
+
+    if (vName) vName.textContent = userProfile.name;
+    if (vHandle) vHandle.textContent = userProfile.handle;
+    if (vAvatar) vAvatar.textContent = (userProfile.name || 'U').charAt(0).toUpperCase();
+    if (vStreak) vStreak.textContent = `${userProfile.streak || 0} 🔥`;
+    if (vSquad) vSquad.textContent = activeSquadCode ? `#${activeSquadCode}` : 'NONE';
+
     const availableClasses = Object.keys(matrixData);
     if (availableClasses.length > 0) {
         if (!availableClasses.includes(activeClass)) activeClass = availableClasses[0];
@@ -502,6 +526,7 @@ function loadUserInterface() {
     renderSubjectTabs();
     renderMatrixView();
     updateProgressAnalytics();
+    renderSquadView();
 }
 
 function switchTab(viewId) {
@@ -520,6 +545,8 @@ function switchTab(viewId) {
 
     if (viewId === 'friends') {
         checkAndRenderSocial();
+    } else if (viewId === 'squad') {
+        renderSquadView();
     }
 
     playTick(420);
@@ -551,6 +578,26 @@ function renderClassSelectors() {
         };
         container.appendChild(btn);
     });
+}
+
+function promptDeleteCurrentClass() {
+    const classes = Object.keys(matrixData);
+    if (classes.length <= 1) {
+        alert("You must keep at least one class in your matrix.");
+        return;
+    }
+
+    if (confirm(`Permanently remove all chapter data for ${activeClass}?`)) {
+        delete matrixData[activeClass];
+        const remainingClasses = Object.keys(matrixData);
+        activeClass = remainingClasses[0];
+        activeSubject = Object.keys(matrixData[activeClass] || {})[0] || '';
+
+        setSyncStorage('stracker_matrix', matrixData);
+        loadUserInterface();
+        syncMatrixToCloud();
+        playTick(300);
+    }
 }
 
 function renderSubjectTabs() {
@@ -616,7 +663,7 @@ function renderMatrixView() {
             const chip = document.createElement('div');
             chip.className = `chip ${isDone ? 'done' : ''}`;
             chip.textContent = m.label;
-            chip.onclick = () => toggleMilestone(ch.id, m.key);
+            chip.onclick = () => toggleMilestone(ch.id, m.key, m.label, ch.name);
             grid.appendChild(chip);
         });
 
@@ -625,12 +672,31 @@ function renderMatrixView() {
     });
 }
 
-function toggleMilestone(chapterId, key) {
+function toggleMilestone(chapterId, key, label, chapterName) {
     const chapters = matrixData[activeClass]?.[activeSubject] || [];
     const chapter = chapters.find(c => c.id === chapterId);
     if (!chapter) return;
 
-    chapter.milestones[key] = !chapter.milestones[key];
+    const turningOn = !chapter.milestones[key];
+    chapter.milestones[key] = turningOn;
+
+    // Track activity history for peers view and undo rollback
+    if (!userProfile.activity_history) userProfile.activity_history = [];
+
+    if (turningOn) {
+        userProfile.activity_history.push({
+            chapterId,
+            key,
+            desc: `Cleared ${label} in ${chapterName}`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+    } else {
+        // Undo: filter out the untoggled action so it rolls back to previous
+        userProfile.activity_history = userProfile.activity_history.filter(
+            a => !(a.chapterId === chapterId && a.key === key)
+        );
+    }
+    setSyncStorage('stracker_profile', userProfile);
 
     const milestonesList = getMilestonesForClass(activeClass);
     const isCompletedNow = milestonesList.every(m => chapter.milestones[m.key]);
@@ -639,7 +705,7 @@ function toggleMilestone(chapterId, key) {
         playTick(880);
         if (typeof confetti === 'function') confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 } });
     } else {
-        playTick(chapter.milestones[key] ? 620 : 250);
+        playTick(turningOn ? 620 : 250);
     }
 
     setSyncStorage('stracker_matrix', matrixData);
@@ -736,12 +802,14 @@ function updateProgressAnalytics() {
     const homeStat = document.getElementById('home-matrix-stat');
     const taskCount = document.getElementById('matrix-milestone-count');
     const chCount = document.getElementById('matrix-chapter-count');
+    const vaultMilestones = document.getElementById('vault-stat-milestones');
 
     if (pctEl) pctEl.textContent = `${pct}%`;
     if (fillEl) fillEl.style.width = `${pct}%`;
     if (homeStat) homeStat.textContent = `${pct}% Cleared`;
     if (taskCount) taskCount.textContent = `${completedTasks}/${totalTasks} Tasks`;
     if (chCount) chCount.textContent = `${totalChapters} Chapters`;
+    if (vaultMilestones) vaultMilestones.textContent = completedTasks;
 }
 
 function toggleTheme() {
@@ -837,12 +905,12 @@ function toggleModal(id, show) {
     if (show) playTick(350);
 }
 
-// Social Infrastructure: Friend Requests & Squads
+// Social Infrastructure: Peers & Activity Feeds
 async function checkAndRenderSocial() {
     if (!supabaseClient || !userProfile?.id) return;
 
     try {
-        // 1. Incoming Requests
+        // 1. Incoming Friend Requests
         const { data: requests } = await supabaseClient
             .from('friendships')
             .select(`
@@ -877,16 +945,16 @@ async function checkAndRenderSocial() {
             }
         }
 
-        // 2. Accepted Friends (Bidirectional Query)
+        // 2. Accepted Friends with Recent Activity Feed & Undo fallback
         const { data: sentAccepted } = await supabaseClient
             .from('friendships')
-            .select(`id, receiver:receiver_id(id, username, full_name)`)
+            .select(`id, receiver:receiver_id(id, username, full_name, activity_history)`)
             .eq('sender_id', userProfile.id)
             .eq('status', 'accepted');
 
         const { data: receivedAccepted } = await supabaseClient
             .from('friendships')
-            .select(`id, sender:sender_id(id, username, full_name)`)
+            .select(`id, sender:sender_id(id, username, full_name, activity_history)`)
             .eq('receiver_id', userProfile.id)
             .eq('status', 'accepted');
 
@@ -908,33 +976,35 @@ async function checkAndRenderSocial() {
             if (friendsList.length > 0) {
                 friendsContainer.innerHTML = '';
                 friendsList.forEach(fr => {
+                    const actList = fr.activity_history || [];
+                    const lastAct = actList.length > 0 ? actList[actList.length - 1] : null;
+                    const actHtml = lastAct 
+                        ? `<div class="friend-activity-text">⚡ ${lastAct.desc} <span style="color:#666;">(${lastAct.timestamp})</span></div>`
+                        : `<div class="friend-activity-text" style="color:#777;">Reviewing concepts</div>`;
+
                     const card = document.createElement('div');
                     card.className = 'squad-card glass-panel';
                     card.innerHTML = `
                         <div class="user-meta">
                             <p>${fr.full_name}</p>
                             <span>${fr.username}</span>
+                            ${actHtml}
                         </div>
                         <span class="badge-tag">ACTIVE</span>
                     `;
                     friendsContainer.appendChild(card);
                 });
-                if (homePeerStatus) homePeerStatus.textContent = `${friendsList.length} friend(s) in your study circle. Keep pushing forward!`;
+                if (homePeerStatus) homePeerStatus.textContent = `${friendsList.length} friend(s) connected. Keep pushing forward!`;
             } else {
                 friendsContainer.innerHTML = `
                     <div class="squad-card glass-panel">
                         <div class="user-meta">
                             <p>No friends added yet.</p>
-                            <span>Share your username with friends to study together.</span>
+                            <span>Share your username with peers to study together.</span>
                         </div>
                     </div>
                 `;
             }
-        }
-
-        // 3. Auto-load Active Squad
-        if (activeSquadCode) {
-            fetchAndDisplaySquad(activeSquadCode);
         }
     } catch (e) {
         console.warn("Social render error:", e);
@@ -998,6 +1068,78 @@ async function handleAddFriend() {
     }
 }
 
+// Dedicated Squad Command Center & Realtime Synchronization
+function renderSquadView() {
+    const activePanel = document.getElementById('squad-active-panel');
+    const joinPanel = document.getElementById('squad-join-panel');
+    const statusBadge = document.getElementById('squad-status-badge');
+    const codeHeader = document.getElementById('squad-active-code');
+
+    if (activeSquadCode) {
+        if (activePanel) activePanel.style.display = 'block';
+        if (joinPanel) joinPanel.style.display = 'none';
+        if (statusBadge) {
+            statusBadge.textContent = 'LIVE SYNC';
+            statusBadge.style.color = 'var(--accent, #00ffb2)';
+        }
+        if (codeHeader) codeHeader.textContent = `#${activeSquadCode}`;
+        fetchAndDisplaySquad(activeSquadCode);
+    } else {
+        if (activePanel) activePanel.style.display = 'none';
+        if (joinPanel) joinPanel.style.display = 'block';
+        if (statusBadge) {
+            statusBadge.textContent = 'OFFLINE';
+            statusBadge.style.color = '#777';
+        }
+    }
+}
+
+function setupSquadRealtime(code) {
+    if (!supabaseClient || !code) return;
+
+    if (realtimeSquadChannel) realtimeSquadChannel.unsubscribe();
+    if (realtimePingChannel) realtimePingChannel.unsubscribe();
+
+    // 1. Listen for member joins / leaves instantly
+    realtimeSquadChannel = supabaseClient
+        .channel(`room_${code}`)
+        .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'squad_rooms',
+            filter: `room_code=eq.${code}`
+        }, payload => {
+            if (payload.eventType === 'DELETE') {
+                handleLeaveSquad(true);
+            } else if (payload.new && payload.new.members) {
+                // If member was removed, verify current user is still in the room
+                const stillIn = payload.new.members.find(m => m.id === userProfile.id);
+                if (!stillIn) {
+                    handleLeaveSquad(true);
+                } else {
+                    renderRosterPills(payload.new.members);
+                }
+            }
+        })
+        .subscribe();
+
+    // 2. Listen for tactical quick-pings
+    realtimePingChannel = supabaseClient
+        .channel(`pings_${code}`)
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'squad_pings',
+            filter: `room_code=eq.${code}`
+        }, payload => {
+            if (payload.new) {
+                appendPingToFeed(payload.new);
+                playTick(550);
+            }
+        })
+        .subscribe();
+}
+
 async function handleCreateSquad() {
     if (!supabaseClient || !userProfile?.id) {
         alert("Sign in to create a squad room.");
@@ -1018,13 +1160,25 @@ async function handleCreateSquad() {
 
     activeSquadCode = rawCode;
     setSyncStorage('stracker_active_squad', activeSquadCode);
-    fetchAndDisplaySquad(rawCode);
+    setupSquadRealtime(rawCode);
+    renderSquadView();
+    fetchSquadPings(rawCode);
+    loadUserInterface();
     alert(`Squad created: #${rawCode}\nShare this code with your peers!`);
 }
 
 async function handleJoinSquad() {
     const input = document.getElementById('join-squad-input');
-    let code = input ? input.value.trim().toUpperCase() : '';
+    joinSquadByCode(input ? input.value : '');
+}
+
+async function handleJoinDedicatedSquad() {
+    const input = document.getElementById('dedicated-join-input');
+    joinSquadByCode(input ? input.value : '');
+}
+
+async function joinSquadByCode(rawInput) {
+    let code = (rawInput || '').trim().toUpperCase();
     code = code.replace(/^#/, '');
 
     if (!code) {
@@ -1056,8 +1210,10 @@ async function handleJoinSquad() {
 
     activeSquadCode = code;
     setSyncStorage('stracker_active_squad', activeSquadCode);
-    displayActiveSquad(code, members);
-    if (input) input.value = '';
+    setupSquadRealtime(code);
+    renderSquadView();
+    fetchSquadPings(code);
+    loadUserInterface();
     alert(`Joined Squad: #${code}!`);
 }
 
@@ -1069,60 +1225,146 @@ async function fetchAndDisplaySquad(code) {
         .eq('room_code', code)
         .single();
 
-    if (squad) {
-        displayActiveSquad(code, squad.members || []);
+    if (squad && squad.members) {
+        renderRosterPills(squad.members);
     }
 }
 
-function displayActiveSquad(code, members) {
-    const box = document.getElementById('active-squad-box');
-    const title = document.getElementById('active-squad-title');
-    const list = document.getElementById('squad-members-list');
-    if (!box || !list) return;
+function renderRosterPills(members) {
+    const rosterBar = document.getElementById('squad-live-roster');
+    if (!rosterBar) return;
 
-    box.style.display = 'block';
-    if (title) title.textContent = `ACTIVE SQUAD — #${code}`;
-
-    list.innerHTML = '';
+    rosterBar.innerHTML = '';
     members.forEach(m => {
-        const item = document.createElement('div');
-        item.className = 'squad-card glass-panel';
-        item.style.marginTop = '6px';
-        item.innerHTML = `
-            <div class="user-meta">
-                <p>${m.name}</p>
-                <span>${m.handle}</span>
-            </div>
-            <span class="badge-tag">IN ROOM</span>
+        const pill = document.createElement('div');
+        const isSelf = m.id === userProfile.id;
+        pill.className = `squad-member-pill ${isSelf ? 'self' : ''}`;
+        pill.innerHTML = `
+            <span>●</span>
+            <strong>${m.name}</strong>
+            <span style="color: #888;">${m.handle}</span>
         `;
-        list.appendChild(item);
+        rosterBar.appendChild(pill);
     });
 }
 
-async function handleLeaveSquad() {
-    if (!activeSquadCode || !supabaseClient || !userProfile?.id) return;
+async function handleLeaveSquad(silent = false) {
+    if (!activeSquadCode) return;
 
-    if (!confirm("Are you sure you want to leave this squad?")) return;
+    if (!silent && !confirm("Are you sure you want to leave this squad?")) return;
 
-    const { data: squad } = await supabaseClient
-        .from('squad_rooms')
-        .select('*')
-        .eq('room_code', activeSquadCode)
-        .single();
+    const leavingCode = activeSquadCode;
 
-    if (squad) {
-        const updatedMembers = (squad.members || []).filter(m => m.id !== userProfile.id);
-        await supabaseClient
+    if (supabaseClient && userProfile?.id) {
+        const { data: squad } = await supabaseClient
             .from('squad_rooms')
-            .update({ members: updatedMembers })
-            .eq('room_code', activeSquadCode);
+            .select('*')
+            .eq('room_code', leavingCode)
+            .single();
+
+        if (squad) {
+            const updatedMembers = (squad.members || []).filter(m => m.id !== userProfile.id);
+            if (updatedMembers.length === 0) {
+                // Delete empty squad room
+                await supabaseClient.from('squad_rooms').delete().eq('room_code', leavingCode);
+            } else {
+                await supabaseClient.from('squad_rooms').update({ members: updatedMembers }).eq('room_code', leavingCode);
+            }
+        }
     }
+
+    if (realtimeSquadChannel) realtimeSquadChannel.unsubscribe();
+    if (realtimePingChannel) realtimePingChannel.unsubscribe();
 
     activeSquadCode = null;
     localStorage.removeItem('stracker_active_squad');
-    const box = document.getElementById('active-squad-box');
-    if (box) box.style.display = 'none';
-    alert("You have left the squad.");
+    renderSquadView();
+    loadUserInterface();
+
+    if (!silent) alert("You have left the squad room.");
+}
+
+// 3-Second Rate-Limited Tactical Pings
+async function sendQuickPing(msg) {
+    if (pingCooldownRemaining > 0) return;
+    if (!activeSquadCode || !supabaseClient || !userProfile?.id) return;
+
+    startPingCooldown(3);
+
+    await supabaseClient.from('squad_pings').insert({
+        room_code: activeSquadCode,
+        user_id: userProfile.id,
+        sender_name: userProfile.name,
+        sender_handle: userProfile.handle,
+        message: msg
+    });
+
+    playTick(650);
+}
+
+function startPingCooldown(durationSec) {
+    pingCooldownRemaining = durationSec;
+    const bar = document.getElementById('ping-cooldown-bar');
+    const secEl = document.getElementById('cooldown-seconds');
+    const buttons = document.querySelectorAll('.ping-btn');
+
+    buttons.forEach(b => b.setAttribute('disabled', 'true'));
+    if (bar) bar.style.display = 'block';
+    if (secEl) secEl.textContent = pingCooldownRemaining;
+
+    clearInterval(pingCooldownTimer);
+    pingCooldownTimer = setInterval(() => {
+        pingCooldownRemaining--;
+        if (secEl) secEl.textContent = pingCooldownRemaining;
+
+        if (pingCooldownRemaining <= 0) {
+            clearInterval(pingCooldownTimer);
+            if (bar) bar.style.display = 'none';
+            buttons.forEach(b => b.removeAttribute('disabled'));
+        }
+    }, 1000);
+}
+
+async function fetchSquadPings(code) {
+    if (!supabaseClient || !code) return;
+    const { data: pings } = await supabaseClient
+        .from('squad_pings')
+        .select('*')
+        .eq('room_code', code)
+        .order('created_at', { ascending: true })
+        .limit(25);
+
+    const feed = document.getElementById('squad-pings-feed');
+    if (!feed) return;
+
+    if (pings && pings.length > 0) {
+        feed.innerHTML = '';
+        pings.forEach(p => appendPingToFeed(p));
+    } else {
+        feed.innerHTML = '<p class="subtext">No directives sent yet. Broadcast one below.</p>';
+    }
+}
+
+function appendPingToFeed(ping) {
+    const feed = document.getElementById('squad-pings-feed');
+    if (!feed) return;
+
+    if (feed.querySelector('.subtext')) {
+        feed.innerHTML = '';
+    }
+
+    const item = document.createElement('div');
+    item.className = 'ping-card';
+    const timeStr = new Date(ping.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    item.innerHTML = `
+        <div>
+            <span class="ping-sender">${ping.sender_name}</span>
+            <span class="ping-msg">${ping.message}</span>
+        </div>
+        <span class="ping-time">${timeStr}</span>
+    `;
+    feed.appendChild(item);
+    feed.scrollTop = feed.scrollHeight;
 }
 
 async function submitFeedback() {
