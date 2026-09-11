@@ -687,3 +687,38 @@ body {
 .nav-item.active {
     color: var(--accent);
 }
+
+/* --- Helpbook Modal Styles --- */
+.help-modal-box {
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.help-scroll-content {
+    overflow-y: auto;
+    padding-right: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.help-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    border-radius: var(--radius-sm);
+}
+
+.help-item h4 {
+    font-size: 0.85rem;
+    color: var(--accent);
+    margin-bottom: 4px;
+}
+
+.help-item p {
+    font-size: 0.78rem;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
