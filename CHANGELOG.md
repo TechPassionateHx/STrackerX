@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Friend Activity Desynchronization**: Resolved activity logging inconsistencies across study circles by standardizing the `activity_history` JSON structure.
 
 
-## [0.2.0] - 2026-09-11
+## [0.2.0] - 2026-09-10
 
 ### Added
 - **Multi-Grade Curricula & Language Expansion**: Introduced complete Class 9 matrices, integrated English Core for Classes 11–12, and added Social Science, English, and Hindi/Sanskrit electives for Classes 9–10.
