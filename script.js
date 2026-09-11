@@ -2,7 +2,6 @@
 const SUPABASE_URL = "https://hndzaifthicnvaahhrxf.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_5fOfHVlm1U4DbVhSkyn1zQ_a6ss3Jwm"; 
 
-
 let supabaseClient = null;
 if (window.supabase && typeof window.supabase.createClient === 'function') {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -190,21 +189,33 @@ const OFFICIAL_CHAPTERS = {
     }
 };
 
+// 7. Milestone Weighting Definitions
 const MILESTONES_FOUNDATION = [
-    { key: "notes", label: "Notes" },
-    { key: "module", label: "Exercises" },
-    { key: "dpps", label: "Practice" },
-    { key: "rev", label: "Revision" }
+    { key: "notes", label: "Notes", weight: 20 },
+    { key: "module", label: "Exercises", weight: 30 },
+    { key: "dpps", label: "Practice", weight: 30 },
+    { key: "rev", label: "Revision", weight: 20 }
 ];
 
 const MILESTONES_SENIOR = [
-    { key: "notes", label: "Notes" },
-    { key: "module", label: "Module" },
-    { key: "dpps", label: "DPPs" },
-    { key: "snotes", label: "S-Notes" },
-    { key: "rev1", label: "Rev 1" },
-    { key: "rev2", label: "Rev 2" }
+    { key: "notes", label: "Notes", weight: 15 },
+    { key: "module", label: "Module", weight: 25 },
+    { key: "dpps", label: "DPPs", weight: 25 },
+    { key: "snotes", label: "S-Notes", weight: 10 },
+    { key: "rev1", label: "Rev 1", weight: 15 },
+    { key: "rev2", label: "Rev 2", weight: 10 }
 ];
+
+// 4. Pedagogical Prerequisite Mappings
+const PREREQUISITE_DEPENDENCIES = {
+    "Haloalkanes and Haloarenes": ["Organic Chemistry: Some Basic Principles and Techniques", "Hydrocarbons"],
+    "Alcohols, Phenols and Ethers": ["Haloalkanes and Haloarenes"],
+    "Aldehydes, Ketones and Carboxylic Acids": ["Alcohols, Phenols and Ethers"],
+    "System of Particles and Rotational Motion": ["Laws of Motion", "Work, Energy and Power"],
+    "Gravitation": ["Laws of Motion"],
+    "Integrals": ["Continuity and Differentiability", "Application of Derivatives"],
+    "Differential Equations": ["Integrals"]
+};
 
 function getMilestonesForClass(className) {
     if (["Class 11", "Class 12"].includes(className)) {
@@ -224,6 +235,7 @@ let realtimeSquadChannel = null;
 let realtimePingChannel = null;
 let pingCooldownTimer = null;
 let pingCooldownRemaining = 0;
+let taskySwappedTaskIds = [];
 
 function buildTrackData(track, existingData) {
     let targetClasses = [];
@@ -278,6 +290,17 @@ function buildTrackData(track, existingData) {
     });
 
     return output;
+}
+
+// Helper to check milestone state (supports boolean and timestamp object)
+function isMilestoneCompleted(val) {
+    if (typeof val === 'object' && val !== null) return !!val.done;
+    return !!val;
+}
+
+function getMilestoneTimestamp(val) {
+    if (typeof val === 'object' && val !== null && val.completedAt) return val.completedAt;
+    return Date.now(); // Fallback for legacy boolean data
 }
 
 async function bootApp() {
@@ -529,6 +552,7 @@ function loadUserInterface() {
     renderMatrixView();
     updateProgressAnalytics();
     renderSquadView();
+    generateAndRenderTasky();
 }
 
 function switchTab(viewId) {
@@ -545,7 +569,10 @@ function switchTab(viewId) {
         }
     });
 
-    if (viewId === 'friends') {
+    if (viewId === 'hub') {
+        generateAndRenderTasky();
+        checkAndRenderSocial();
+    } else if (viewId === 'friends') {
         checkAndRenderSocial();
     } else if (viewId === 'squad') {
         renderSquadView();
@@ -627,6 +654,7 @@ function renderSubjectTabs() {
     });
 }
 
+// 7. Weighted Chapter Rendering
 function renderMatrixView() {
     const container = document.getElementById('matrix-container');
     const label = document.getElementById('matrix-active-label');
@@ -642,9 +670,13 @@ function renderMatrixView() {
         const card = document.createElement('div');
         card.className = 'chapter-card';
 
-        const total = milestonesList.length;
-        const doneCount = milestonesList.filter(m => ch.milestones[m.key]).length;
-        const pct = Math.round((doneCount / total) * 100);
+        let earnedWeight = 0;
+        milestonesList.forEach(m => {
+            if (isMilestoneCompleted(ch.milestones[m.key])) {
+                earnedWeight += m.weight;
+            }
+        });
+        const pct = Math.min(100, Math.round(earnedWeight));
 
         card.innerHTML = `
             <div class="chapter-header">
@@ -661,7 +693,7 @@ function renderMatrixView() {
         grid.className = `milestones-grid ${milestonesList.length === 4 ? 'four-cols' : ''}`;
 
         milestonesList.forEach(m => {
-            const isDone = !!ch.milestones[m.key];
+            const isDone = isMilestoneCompleted(ch.milestones[m.key]);
             const chip = document.createElement('div');
             chip.className = `chip ${isDone ? 'done' : ''}`;
             chip.textContent = m.label;
@@ -674,13 +706,23 @@ function renderMatrixView() {
     });
 }
 
+// Timestamp-backed milestone toggling with activity logging
 function toggleMilestone(chapterId, key, label, chapterName) {
     const chapters = matrixData[activeClass]?.[activeSubject] || [];
     const chapter = chapters.find(c => c.id === chapterId);
     if (!chapter) return;
 
-    const turningOn = !chapter.milestones[key];
-    chapter.milestones[key] = turningOn;
+    const currentlyDone = isMilestoneCompleted(chapter.milestones[key]);
+    const turningOn = !currentlyDone;
+
+    if (turningOn) {
+        chapter.milestones[key] = {
+            done: true,
+            completedAt: Date.now()
+        };
+    } else {
+        chapter.milestones[key] = false;
+    }
 
     if (!userProfile.activity_history) userProfile.activity_history = [];
 
@@ -699,7 +741,7 @@ function toggleMilestone(chapterId, key, label, chapterName) {
     setSyncStorage('stracker_profile', userProfile);
 
     const milestonesList = getMilestonesForClass(activeClass);
-    const isCompletedNow = milestonesList.every(m => chapter.milestones[m.key]);
+    const isCompletedNow = milestonesList.every(m => isMilestoneCompleted(chapter.milestones[m.key]));
 
     if (isCompletedNow) {
         playTick(880);
@@ -712,8 +754,8 @@ function toggleMilestone(chapterId, key, label, chapterName) {
     renderMatrixView();
     updateProgressAnalytics();
     syncMatrixToCloud();
+    generateAndRenderTasky();
 
-    // If inside a squad, refresh squad view so own activity updates
     if (activeSquadCode) {
         fetchAndDisplaySquad(activeSquadCode);
     }
@@ -760,6 +802,7 @@ function submitCustomChapter() {
     renderMatrixView();
     updateProgressAnalytics();
     syncMatrixToCloud();
+    generateAndRenderTasky();
     playTick(720);
 }
 
@@ -770,6 +813,7 @@ function deleteCustomChapter(id) {
     renderMatrixView();
     updateProgressAnalytics();
     syncMatrixToCloud();
+    generateAndRenderTasky();
 }
 
 function handleStreamSwitch(newTrack) {
@@ -783,24 +827,30 @@ function handleStreamSwitch(newTrack) {
     playTick(500);
 }
 
+// 7. Weighted Progress Analytics Calculation
 function updateProgressAnalytics() {
-    let totalTasks = 0;
-    let completedTasks = 0;
+    let totalMaxWeight = 0;
+    let totalEarnedWeight = 0;
+    let totalMilestonesCount = 0;
     let totalChapters = 0;
 
-    Object.values(matrixData).forEach(subjects => {
-        Object.values(subjects).forEach(chapters => {
+    Object.keys(matrixData).forEach(cls => {
+        const milestonesList = getMilestonesForClass(cls);
+        Object.values(matrixData[cls] || {}).forEach(chapters => {
             chapters.forEach(ch => {
                 totalChapters++;
-                Object.values(ch.milestones).forEach(isDone => {
-                    totalTasks++;
-                    if (isDone) completedTasks++;
+                totalMaxWeight += 100;
+                milestonesList.forEach(m => {
+                    if (isMilestoneCompleted(ch.milestones[m.key])) {
+                        totalEarnedWeight += m.weight;
+                        totalMilestonesCount++;
+                    }
                 });
             });
         });
     });
 
-    const pct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    const pct = totalMaxWeight > 0 ? Math.round((totalEarnedWeight / totalMaxWeight) * 100) : 0;
     
     const pctEl = document.getElementById('matrix-pct');
     const fillEl = document.getElementById('matrix-fill');
@@ -812,9 +862,221 @@ function updateProgressAnalytics() {
     if (pctEl) pctEl.textContent = `${pct}%`;
     if (fillEl) fillEl.style.width = `${pct}%`;
     if (homeStat) homeStat.textContent = `${pct}% Cleared`;
-    if (taskCount) taskCount.textContent = `${completedTasks}/${totalTasks} Tasks`;
+    if (taskCount) taskCount.textContent = `${totalMilestonesCount} Milestones`;
     if (chCount) chCount.textContent = `${totalChapters} Chapters`;
-    if (vaultMilestones) vaultMilestones.textContent = completedTasks;
+    if (vaultMilestones) vaultMilestones.textContent = totalMilestonesCount;
+}
+
+// ----------------------------------------------------
+// TASKY STRATEGIC ENGINE: Spaced Repetition & Prerequisites
+// ----------------------------------------------------
+function generateStrategicTasks() {
+    const candidateTasks = [];
+    const now = Date.now();
+    const DAY_MS = 24 * 60 * 60 * 1000;
+
+    // Helper to evaluate prerequisites
+    function prerequisitesCleared(cls, chapterName) {
+        const reqs = PREREQUISITE_DEPENDENCIES[chapterName];
+        if (!reqs || reqs.length === 0) return true;
+
+        for (const req of reqs) {
+            let found = false;
+            let cleared = false;
+            Object.keys(matrixData).forEach(searchCls => {
+                Object.values(matrixData[searchCls] || {}).forEach(chapters => {
+                    const matched = chapters.find(c => c.name === req);
+                    if (matched) {
+                        found = true;
+                        if (isMilestoneCompleted(matched.milestones['notes'])) cleared = true;
+                    }
+                });
+            });
+            if (found && !cleared) return false;
+        }
+        return true;
+    }
+
+    Object.keys(matrixData).forEach(cls => {
+        const isSenior = ["Class 11", "Class 12"].includes(cls);
+        const subjects = matrixData[cls] || {};
+
+        Object.keys(subjects).forEach(sub => {
+            const chapters = subjects[sub] || [];
+
+            chapters.forEach((ch, chIdx) => {
+                const taskIdBase = `${cls}_${sub}_${ch.id}`;
+                if (taskySwappedTaskIds.includes(taskIdBase)) return;
+
+                const hasNotes = isMilestoneCompleted(ch.milestones['notes']);
+                const notesTime = hasNotes ? getMilestoneTimestamp(ch.milestones['notes']) : null;
+                const daysSinceNotes = notesTime ? (now - notesTime) / DAY_MS : 0;
+
+                const hasModule = isMilestoneCompleted(ch.milestones['module']);
+                const moduleTime = hasModule ? getMilestoneTimestamp(ch.milestones['module']) : null;
+                const daysSinceModule = moduleTime ? (now - moduleTime) / DAY_MS : 0;
+
+                const hasRev1 = isSenior ? isMilestoneCompleted(ch.milestones['rev1']) : isMilestoneCompleted(ch.milestones['rev']);
+                const rev1Time = hasRev1 ? getMilestoneTimestamp(ch.milestones[isSenior ? 'rev1' : 'rev']) : null;
+                const daysSinceRev1 = rev1Time ? (now - rev1Time) / DAY_MS : 0;
+
+                const prereqPass = prerequisitesCleared(cls, ch.name);
+
+                // Decay Rule 1: Notes completed >= 2 days ago & Module pending
+                if (hasNotes && !hasModule && daysSinceNotes >= 2) {
+                    candidateTasks.push({
+                        id: `${taskIdBase}_module`,
+                        taskIdBase,
+                        cls,
+                        sub,
+                        chapterName: ch.name,
+                        chapterId: ch.id,
+                        targetKey: 'module',
+                        actionLabel: isSenior ? 'Solve Module & Exercises' : 'Complete Exercises',
+                        urgency: daysSinceNotes >= 4 ? 'HIGH' : 'NORMAL',
+                        priorityScore: (daysSinceNotes * 10) + (isSenior ? 15 : 5) + (prereqPass ? 20 : -30)
+                    });
+                }
+
+                // Decay Rule 2: Module completed >= 3 days ago & Revision 1 pending
+                if (hasModule && !hasRev1 && daysSinceModule >= 3) {
+                    candidateTasks.push({
+                        id: `${taskIdBase}_rev1`,
+                        taskIdBase,
+                        cls,
+                        sub,
+                        chapterName: ch.name,
+                        chapterId: ch.id,
+                        targetKey: isSenior ? 'rev1' : 'rev',
+                        actionLabel: 'Stage 1 Revision',
+                        urgency: daysSinceModule >= 6 ? 'HIGH' : 'NORMAL',
+                        priorityScore: (daysSinceModule * 8) + (isSenior ? 15 : 5)
+                    });
+                }
+
+                // Decay Rule 3 (Senior): Rev 1 completed >= 7 days ago & Rev 2 pending
+                if (isSenior && hasRev1 && !isMilestoneCompleted(ch.milestones['rev2']) && daysSinceRev1 >= 7) {
+                    candidateTasks.push({
+                        id: `${taskIdBase}_rev2`,
+                        taskIdBase,
+                        cls,
+                        sub,
+                        chapterName: ch.name,
+                        chapterId: ch.id,
+                        targetKey: 'rev2',
+                        actionLabel: 'Final Mastery Revision 2',
+                        urgency: daysSinceRev1 >= 14 ? 'HIGH' : 'NORMAL',
+                        priorityScore: (daysSinceRev1 * 5) + 20
+                    });
+                }
+
+                // New Chapter Progression Suggestion (If chapter untouched & prerequisites cleared)
+                if (!hasNotes && prereqPass && chIdx <= 4) {
+                    candidateTasks.push({
+                        id: `${taskIdBase}_notes`,
+                        taskIdBase,
+                        cls,
+                        sub,
+                        chapterName: ch.name,
+                        chapterId: ch.id,
+                        targetKey: 'notes',
+                        actionLabel: 'Begin Chapter Lectures & Notes',
+                        urgency: 'NORMAL',
+                        priorityScore: 30 - chIdx + (isSenior ? 10 : 0)
+                    });
+                }
+            });
+        });
+    });
+
+    // Balanced Subject Allocation: Group by subject and pick round-robin
+    const tasksBySubject = {};
+    candidateTasks.forEach(t => {
+        if (!tasksBySubject[t.sub]) tasksBySubject[t.sub] = [];
+        tasksBySubject[t.sub].push(t);
+    });
+
+    Object.keys(tasksBySubject).forEach(sub => {
+        tasksBySubject[sub].sort((a, b) => b.priorityScore - a.priorityScore);
+    });
+
+    const balancedTasks = [];
+    const subjectsList = Object.keys(tasksBySubject);
+    let round = 0;
+    while (balancedTasks.length < 5 && round < 4) {
+        let addedInRound = false;
+        subjectsList.forEach(sub => {
+            if (balancedTasks.length < 5 && tasksBySubject[sub][round]) {
+                balancedTasks.push(tasksBySubject[sub][round]);
+                addedInRound = true;
+            }
+        });
+        if (!addedInRound) break;
+        round++;
+    }
+
+    return balancedTasks;
+}
+
+function generateAndRenderTasky() {
+    const tasks = generateStrategicTasks();
+
+    const badge = document.getElementById('tasky-count-badge');
+    const fabLabel = document.getElementById('tasky-fab-label');
+    const hubContainer = document.getElementById('tasky-hub-container');
+    const modalContainer = document.getElementById('tasky-modal-container');
+
+    if (badge) badge.textContent = `${tasks.length} DIRECTIVES`;
+    if (fabLabel) fabLabel.textContent = `Tasky (${tasks.length})`;
+
+    if (tasks.length === 0) {
+        const emptyHtml = `<p class="subtext" style="padding: 10px 0;">All scheduled revisions and practices are up to date! Pick a new chapter in the Matrix.</p>`;
+        if (hubContainer) hubContainer.innerHTML = emptyHtml;
+        if (modalContainer) modalContainer.innerHTML = emptyHtml;
+        return;
+    }
+
+    let cardsHtml = '';
+    tasks.forEach(t => {
+        const isHigh = t.urgency === 'HIGH';
+        cardsHtml += `
+            <div class="tasky-card ${isHigh ? 'high-urgency' : ''}">
+                <div class="tasky-meta">
+                    <span class="tasky-title">${t.actionLabel}</span>
+                    <span class="tasky-sub">${t.sub} • ${t.chapterName} (${t.cls})</span>
+                </div>
+                <div class="tasky-actions">
+                    <button type="button" class="btn-task-done" onclick="completeTaskyDirective('${t.cls}', '${t.sub}', '${t.chapterId}', '${t.targetKey}', '${t.actionLabel}', '${t.chapterName}')">DONE</button>
+                    <button type="button" class="btn-task-swap" onclick="swapTaskyDirective('${t.taskIdBase}')" title="Swap Directive">⇄</button>
+                </div>
+            </div>
+        `;
+    });
+
+    if (hubContainer) hubContainer.innerHTML = cardsHtml;
+    if (modalContainer) modalContainer.innerHTML = cardsHtml;
+}
+
+function completeTaskyDirective(cls, sub, chapterId, targetKey, label, chapterName) {
+    activeClass = cls;
+    activeSubject = sub;
+    toggleMilestone(chapterId, targetKey, label, chapterName);
+    toggleTaskyModal(false);
+}
+
+function swapTaskyDirective(taskIdBase) {
+    taskySwappedTaskIds.push(taskIdBase);
+    playTick(300);
+    generateAndRenderTasky();
+}
+
+function toggleTaskyModal(show) {
+    const modal = document.getElementById('modal-tasky');
+    if (modal) modal.style.display = show ? 'flex' : 'none';
+    if (show) {
+        generateAndRenderTasky();
+        playTick(420);
+    }
 }
 
 function toggleTheme() {
@@ -826,7 +1088,7 @@ function toggleTheme() {
 }
 
 // 5. Persistent Timestamp-Based Pomodoro Engine
-let sprintDuration = 25 * 60; // 25 min in seconds
+let sprintDuration = 25 * 60;
 let timerInterval = null;
 
 function initPersistentTimer() {
@@ -842,7 +1104,6 @@ function initPersistentTimer() {
             if (btn) btn.textContent = 'PAUSE';
             runTimerLoop();
         } else {
-            // Sprint completed while user was away or refreshing
             renderTimerSeconds(0);
             recordSprintStreak();
             clearTimerState();
@@ -895,7 +1156,6 @@ function toggleTimer() {
     const state = getSyncStorage('stracker_timer_state', null);
 
     if (state && state.isRunning) {
-        // Pause timer: record remaining seconds
         const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
         const remaining = Math.max(0, state.totalDuration - elapsed);
         clearInterval(timerInterval);
@@ -903,7 +1163,6 @@ function toggleTimer() {
         if (btn) btn.textContent = 'START SPRINT';
         playTick(350);
     } else {
-        // Start or Resume timer
         const currentRemaining = (state && state.remainingSeconds) ? state.remainingSeconds : sprintDuration;
         const newState = {
             isRunning: true,
@@ -970,7 +1229,7 @@ function toggleModal(id, show) {
     if (show) playTick(350);
 }
 
-// Social Infrastructure: Peers & Activity Feeds
+// 8. Social Infrastructure with Home Screen Circle Feed
 async function checkAndRenderSocial() {
     if (!supabaseClient || !userProfile?.id) return;
 
@@ -1032,11 +1291,15 @@ async function checkAndRenderSocial() {
         const friendsContainer = document.getElementById('friends-list-container');
         const homePeerStatus = document.getElementById('home-peer-status');
         const homeFriendsStat = document.getElementById('home-friends-stat');
+        const homeFeedContainer = document.getElementById('home-peer-feed-container');
 
-        if (friendsContainer) {
-            if (homeFriendsStat) homeFriendsStat.textContent = `${friendsList.length} Connected`;
+        if (homeFriendsStat) homeFriendsStat.textContent = `${friendsList.length} Connected`;
 
-            if (friendsList.length > 0) {
+        if (friendsList.length > 0) {
+            if (homePeerStatus) homePeerStatus.textContent = `${friendsList.length} friend(s) in your accountability circle:`;
+
+            // Render Peers View List
+            if (friendsContainer) {
                 friendsContainer.innerHTML = '';
                 friendsList.forEach(fr => {
                     const actList = fr.activity_history || [];
@@ -1057,8 +1320,41 @@ async function checkAndRenderSocial() {
                     `;
                     friendsContainer.appendChild(card);
                 });
-                if (homePeerStatus) homePeerStatus.textContent = `${friendsList.length} friend(s) connected. Keep pushing forward!`;
-            } else {
+            }
+
+            // 8. Render Home Screen Activity Feed
+            if (homeFeedContainer) {
+                homeFeedContainer.innerHTML = '';
+                const feedItems = [];
+                friendsList.forEach(fr => {
+                    const actList = fr.activity_history || [];
+                    if (actList.length > 0) {
+                        const last = actList[actList.length - 1];
+                        feedItems.push({ name: fr.full_name, handle: fr.username, ...last });
+                    }
+                });
+
+                if (feedItems.length > 0) {
+                    feedItems.slice(0, 4).forEach(item => {
+                        const div = document.createElement('div');
+                        div.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-size: 0.78rem;";
+                        div.innerHTML = `
+                            <div>
+                                <strong style="color: #fff;">${item.handle}</strong>
+                                <span style="color: var(--accent, #00ffb2); margin-left: 4px;">${item.desc}</span>
+                            </div>
+                            <span style="color: #777; font-size: 0.68rem;">${item.timestamp}</span>
+                        `;
+                        homeFeedContainer.appendChild(div);
+                    });
+                } else {
+                    homeFeedContainer.innerHTML = '<p class="subtext" style="font-size: 0.75rem;">Your peers are currently reviewing notes.</p>';
+                }
+            }
+        } else {
+            if (homePeerStatus) homePeerStatus.textContent = "Connect with peers to share verified study accountability.";
+            if (homeFeedContainer) homeFeedContainer.innerHTML = '';
+            if (friendsContainer) {
                 friendsContainer.innerHTML = `
                     <div class="squad-card glass-panel">
                         <div class="user-meta">
@@ -1163,7 +1459,6 @@ function setupSquadRealtime(code) {
     if (realtimeSquadChannel) realtimeSquadChannel.unsubscribe();
     if (realtimePingChannel) realtimePingChannel.unsubscribe();
 
-    // 1. Listen for member joins, leaves, and activity updates
     realtimeSquadChannel = supabaseClient
         .channel(`room_${code}`)
         .on('postgres_changes', {
@@ -1185,7 +1480,6 @@ function setupSquadRealtime(code) {
         })
         .subscribe();
 
-    // 2. Listen for tactical quick-pings
     realtimePingChannel = supabaseClient
         .channel(`pings_${code}`)
         .on('postgres_changes', {
@@ -1292,14 +1586,12 @@ async function fetchAndDisplaySquad(code) {
     }
 }
 
-// 4. Live Activity Sharing of All Squad Members
 async function renderRosterWithLiveWork(members) {
     const rosterBar = document.getElementById('squad-live-roster');
     if (!rosterBar) return;
 
     rosterBar.innerHTML = '';
 
-    // Fetch latest activity for all squad members in parallel
     const memberIds = members.map(m => m.id);
     let memberActivities = {};
 
@@ -1380,7 +1672,6 @@ async function handleLeaveSquad(silent = false) {
     if (!silent) alert("You have left the squad room.");
 }
 
-// 3-Second Rate-Limited Tactical Pings
 async function sendQuickPing(msg) {
     if (pingCooldownRemaining > 0) return;
     if (!activeSquadCode || !supabaseClient || !userProfile?.id) return;
@@ -1441,7 +1732,6 @@ async function fetchSquadPings(code) {
     }
 }
 
-// 3. Render Tactical Feed with Clear Sender Identification
 function appendPingToFeed(ping) {
     const feed = document.getElementById('squad-pings-feed');
     if (!feed) return;
