@@ -1,4 +1,4 @@
-// --- STrackerX v0.3.0 Engine ---
+// --- STrackerX v1.0.0 Engine ---
 const SUPABASE_URL = "https://hndzaifthicnvaahhrxf.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_5fOfHVlm1U4DbVhSkyn1zQ_a6ss3Jwm"; 
 
