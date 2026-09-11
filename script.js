@@ -2,6 +2,7 @@
 const SUPABASE_URL = "https://hndzaifthicnvaahhrxf.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_5fOfHVlm1U4DbVhSkyn1zQ_a6ss3Jwm"; 
 
+
 let supabaseClient = null;
 if (window.supabase && typeof window.supabase.createClient === 'function') {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -284,6 +285,7 @@ async function bootApp() {
     document.documentElement.setAttribute('data-theme', savedTheme);
 
     rotateMotivation();
+    initPersistentTimer();
 
     if (supabaseClient) {
         try {
@@ -463,6 +465,7 @@ function handleSignOut() {
         if (supabaseClient) supabaseClient.auth.signOut();
         localStorage.removeItem('stracker_profile');
         localStorage.removeItem('stracker_active_squad');
+        localStorage.removeItem('stracker_timer_state');
         location.reload();
     }
 }
@@ -500,7 +503,6 @@ function loadUserInterface() {
     if (vaultSelect) vaultSelect.value = userProfile.track;
     if (homeStreak) homeStreak.textContent = `${userProfile.streak || 0} Day Streak`;
 
-    // Self Data in Vault View
     const vName = document.getElementById('vault-user-name');
     const vHandle = document.getElementById('vault-user-handle');
     const vAvatar = document.getElementById('vault-avatar-char');
@@ -587,7 +589,7 @@ function promptDeleteCurrentClass() {
         return;
     }
 
-    if (confirm(`Permanently remove all chapter data for ${activeClass}?`)) {
+    if (confirm(`Permanently remove all chapter records for ${activeClass}?`)) {
         delete matrixData[activeClass];
         const remainingClasses = Object.keys(matrixData);
         activeClass = remainingClasses[0];
@@ -680,7 +682,6 @@ function toggleMilestone(chapterId, key, label, chapterName) {
     const turningOn = !chapter.milestones[key];
     chapter.milestones[key] = turningOn;
 
-    // Track activity history for peers view and undo rollback
     if (!userProfile.activity_history) userProfile.activity_history = [];
 
     if (turningOn) {
@@ -691,7 +692,6 @@ function toggleMilestone(chapterId, key, label, chapterName) {
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         });
     } else {
-        // Undo: filter out the untoggled action so it rolls back to previous
         userProfile.activity_history = userProfile.activity_history.filter(
             a => !(a.chapterId === chapterId && a.key === key)
         );
@@ -712,6 +712,11 @@ function toggleMilestone(chapterId, key, label, chapterName) {
     renderMatrixView();
     updateProgressAnalytics();
     syncMatrixToCloud();
+
+    // If inside a squad, refresh squad view so own activity updates
+    if (activeSquadCode) {
+        fetchAndDisplaySquad(activeSquadCode);
+    }
 }
 
 function toggleAddModal(show) {
@@ -820,14 +825,109 @@ function toggleTheme() {
     playTick(500);
 }
 
-let sprintTime = 25 * 60;
-let timerId = null;
+// 5. Persistent Timestamp-Based Pomodoro Engine
+let sprintDuration = 25 * 60; // 25 min in seconds
+let timerInterval = null;
 
-function updateTimerDisplay() {
-    const min = String(Math.floor(sprintTime / 60)).padStart(2, '0');
-    const sec = String(sprintTime % 60).padStart(2, '0');
+function initPersistentTimer() {
+    const state = getSyncStorage('stracker_timer_state', null);
+    const btn = document.getElementById('btn-timer-toggle');
+
+    if (state && state.isRunning) {
+        const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+        const remaining = state.totalDuration - elapsed;
+
+        if (remaining > 0) {
+            renderTimerSeconds(remaining);
+            if (btn) btn.textContent = 'PAUSE';
+            runTimerLoop();
+        } else {
+            // Sprint completed while user was away or refreshing
+            renderTimerSeconds(0);
+            recordSprintStreak();
+            clearTimerState();
+        }
+    } else if (state && !state.isRunning) {
+        renderTimerSeconds(state.remainingSeconds);
+        if (btn) btn.textContent = 'START SPRINT';
+    } else {
+        renderTimerSeconds(sprintDuration);
+    }
+}
+
+function renderTimerSeconds(seconds) {
+    const min = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const sec = String(seconds % 60).padStart(2, '0');
     const display = document.getElementById('timer-display');
     if (display) display.textContent = `${min}:${sec}`;
+}
+
+function runTimerLoop() {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        const state = getSyncStorage('stracker_timer_state', null);
+        if (!state || !state.isRunning) {
+            clearInterval(timerInterval);
+            return;
+        }
+
+        const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+        const remaining = state.totalDuration - elapsed;
+
+        if (remaining > 0) {
+            renderTimerSeconds(remaining);
+        } else {
+            clearInterval(timerInterval);
+            renderTimerSeconds(0);
+            const btn = document.getElementById('btn-timer-toggle');
+            if (btn) btn.textContent = 'START SPRINT';
+            playTick(880);
+            if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
+            recordSprintStreak();
+            clearTimerState();
+            alert('🎯 Focus Sprint Completed! Study streak updated.');
+        }
+    }, 1000);
+}
+
+function toggleTimer() {
+    const btn = document.getElementById('btn-timer-toggle');
+    const state = getSyncStorage('stracker_timer_state', null);
+
+    if (state && state.isRunning) {
+        // Pause timer: record remaining seconds
+        const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+        const remaining = Math.max(0, state.totalDuration - elapsed);
+        clearInterval(timerInterval);
+        setSyncStorage('stracker_timer_state', { isRunning: false, remainingSeconds: remaining });
+        if (btn) btn.textContent = 'START SPRINT';
+        playTick(350);
+    } else {
+        // Start or Resume timer
+        const currentRemaining = (state && state.remainingSeconds) ? state.remainingSeconds : sprintDuration;
+        const newState = {
+            isRunning: true,
+            startTime: Date.now(),
+            totalDuration: currentRemaining
+        };
+        setSyncStorage('stracker_timer_state', newState);
+        if (btn) btn.textContent = 'PAUSE';
+        playTick(600);
+        runTimerLoop();
+    }
+}
+
+function resetTimer() {
+    clearInterval(timerInterval);
+    clearTimerState();
+    renderTimerSeconds(sprintDuration);
+    const btn = document.getElementById('btn-timer-toggle');
+    if (btn) btn.textContent = 'START SPRINT';
+    playTick(300);
+}
+
+function clearTimerState() {
+    localStorage.removeItem('stracker_timer_state');
 }
 
 function recordSprintStreak() {
@@ -857,46 +957,11 @@ function recordSprintStreak() {
         if (supabaseClient && userProfile?.id) {
             supabaseClient
                 .from('profiles')
-                .update({ streak: userProfile.streak })
+                .update({ streak: userProfile.streak, last_study_date: todayStr })
                 .eq('id', userProfile.id)
                 .then(() => {});
         }
     }
-}
-
-function toggleTimer() {
-    const btn = document.getElementById('btn-timer-toggle');
-    if (timerId) {
-        clearInterval(timerId);
-        timerId = null;
-        if (btn) btn.textContent = 'START SPRINT';
-    } else {
-        if (btn) btn.textContent = 'PAUSE';
-        playTick(600);
-        timerId = setInterval(() => {
-            if (sprintTime > 0) {
-                sprintTime--;
-                updateTimerDisplay();
-            } else {
-                clearInterval(timerId);
-                timerId = null;
-                if (btn) btn.textContent = 'START SPRINT';
-                playTick(880);
-                if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
-                recordSprintStreak();
-                alert('🎯 Focus Sprint Completed! Study streak updated.');
-            }
-        }, 1000);
-    }
-}
-
-function resetTimer() {
-    clearInterval(timerId);
-    timerId = null;
-    sprintTime = 25 * 60;
-    updateTimerDisplay();
-    const btn = document.getElementById('btn-timer-toggle');
-    if (btn) btn.textContent = 'START SPRINT';
 }
 
 function toggleModal(id, show) {
@@ -910,7 +975,6 @@ async function checkAndRenderSocial() {
     if (!supabaseClient || !userProfile?.id) return;
 
     try {
-        // 1. Incoming Friend Requests
         const { data: requests } = await supabaseClient
             .from('friendships')
             .select(`
@@ -945,7 +1009,6 @@ async function checkAndRenderSocial() {
             }
         }
 
-        // 2. Accepted Friends with Recent Activity Feed & Undo fallback
         const { data: sentAccepted } = await supabaseClient
             .from('friendships')
             .select(`id, receiver:receiver_id(id, username, full_name, activity_history)`)
@@ -1100,7 +1163,7 @@ function setupSquadRealtime(code) {
     if (realtimeSquadChannel) realtimeSquadChannel.unsubscribe();
     if (realtimePingChannel) realtimePingChannel.unsubscribe();
 
-    // 1. Listen for member joins / leaves instantly
+    // 1. Listen for member joins, leaves, and activity updates
     realtimeSquadChannel = supabaseClient
         .channel(`room_${code}`)
         .on('postgres_changes', {
@@ -1112,12 +1175,11 @@ function setupSquadRealtime(code) {
             if (payload.eventType === 'DELETE') {
                 handleLeaveSquad(true);
             } else if (payload.new && payload.new.members) {
-                // If member was removed, verify current user is still in the room
                 const stillIn = payload.new.members.find(m => m.id === userProfile.id);
                 if (!stillIn) {
                     handleLeaveSquad(true);
                 } else {
-                    renderRosterPills(payload.new.members);
+                    renderRosterWithLiveWork(payload.new.members);
                 }
             }
         })
@@ -1226,25 +1288,60 @@ async function fetchAndDisplaySquad(code) {
         .single();
 
     if (squad && squad.members) {
-        renderRosterPills(squad.members);
+        renderRosterWithLiveWork(squad.members);
     }
 }
 
-function renderRosterPills(members) {
+// 4. Live Activity Sharing of All Squad Members
+async function renderRosterWithLiveWork(members) {
     const rosterBar = document.getElementById('squad-live-roster');
     if (!rosterBar) return;
 
     rosterBar.innerHTML = '';
+
+    // Fetch latest activity for all squad members in parallel
+    const memberIds = members.map(m => m.id);
+    let memberActivities = {};
+
+    if (supabaseClient && memberIds.length > 0) {
+        const { data: profiles } = await supabaseClient
+            .from('profiles')
+            .select('id, activity_history')
+            .in('id', memberIds);
+
+        if (profiles) {
+            profiles.forEach(p => {
+                const hist = p.activity_history || [];
+                memberActivities[p.id] = hist.length > 0 ? hist[hist.length - 1] : null;
+            });
+        }
+    }
+
     members.forEach(m => {
-        const pill = document.createElement('div');
-        const isSelf = m.id === userProfile.id;
-        pill.className = `squad-member-pill ${isSelf ? 'self' : ''}`;
-        pill.innerHTML = `
-            <span>●</span>
-            <strong>${m.name}</strong>
-            <span style="color: #888;">${m.handle}</span>
+        const isSelf = m.id === userProfile?.id;
+        const row = document.createElement('div');
+        row.className = `squad-member-row ${isSelf ? 'self' : ''}`;
+
+        let act = memberActivities[m.id];
+        if (isSelf && userProfile?.activity_history && userProfile.activity_history.length > 0) {
+            act = userProfile.activity_history[userProfile.activity_history.length - 1];
+        }
+
+        const actText = act 
+            ? `⚡ ${act.desc}` 
+            : `Reviewing concepts`;
+
+        row.innerHTML = `
+            <div class="squad-member-info">
+                <span style="color: ${isSelf ? 'var(--accent, #00ffb2)' : '#777'};">●</span>
+                <div>
+                    <strong style="font-size: 0.85rem;">${m.name} ${isSelf ? '<span class="badge-tag" style="font-size: 0.55rem; padding: 1px 4px;">YOU</span>' : ''}</strong>
+                    <div class="subtext" style="font-size: 0.72rem;">${m.handle}</div>
+                </div>
+            </div>
+            <div class="squad-member-activity" title="${actText}">${actText}</div>
         `;
-        rosterBar.appendChild(pill);
+        rosterBar.appendChild(row);
     });
 }
 
@@ -1265,7 +1362,6 @@ async function handleLeaveSquad(silent = false) {
         if (squad) {
             const updatedMembers = (squad.members || []).filter(m => m.id !== userProfile.id);
             if (updatedMembers.length === 0) {
-                // Delete empty squad room
                 await supabaseClient.from('squad_rooms').delete().eq('room_code', leavingCode);
             } else {
                 await supabaseClient.from('squad_rooms').update({ members: updatedMembers }).eq('room_code', leavingCode);
@@ -1345,6 +1441,7 @@ async function fetchSquadPings(code) {
     }
 }
 
+// 3. Render Tactical Feed with Clear Sender Identification
 function appendPingToFeed(ping) {
     const feed = document.getElementById('squad-pings-feed');
     if (!feed) return;
@@ -1353,13 +1450,19 @@ function appendPingToFeed(ping) {
         feed.innerHTML = '';
     }
 
+    const isSelf = ping.user_id === userProfile?.id || ping.sender_handle === userProfile?.handle;
     const item = document.createElement('div');
-    item.className = 'ping-card';
+    item.className = `ping-card ${isSelf ? 'is-self' : ''}`;
     const timeStr = new Date(ping.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
     item.innerHTML = `
-        <div>
-            <span class="ping-sender">${ping.sender_name}</span>
-            <span class="ping-msg">${ping.message}</span>
+        <div style="flex: 1;">
+            <div class="ping-meta">
+                <span class="ping-sender">${ping.sender_name}</span>
+                <span class="ping-handle">${ping.sender_handle}</span>
+                ${isSelf ? '<span class="badge-tag" style="font-size: 0.55rem; padding: 1px 4px; border-color: #ffaa00; color: #ffaa00; background: rgba(255,170,0,0.1);">YOU</span>' : ''}
+            </div>
+            <div class="ping-msg">${ping.message}</div>
         </div>
         <span class="ping-time">${timeStr}</span>
     `;
@@ -1437,7 +1540,9 @@ async function promptSecureReset() {
             console.warn("Cascade wipe error:", err);
         }
 
-        try { localStorage.clear(); } catch(e){}
+        try { 
+            localStorage.clear(); 
+        } catch(e){}
 
         alert("Account and cloud records permanently deleted.");
         location.reload();
