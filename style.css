@@ -47,6 +47,7 @@ body {
     flex-direction: column;
     padding-bottom: 74px;
     background: var(--bg-primary);
+    position: relative;
 }
 
 .glass-panel {
@@ -466,7 +467,6 @@ body {
     transform: scale(0.96);
 }
 
-/* Updated Squad Live Member Item */
 .squad-member-row {
     display: flex;
     justify-content: space-between;
@@ -498,7 +498,6 @@ body {
     white-space: nowrap;
 }
 
-/* Enhanced Tactical Ping Message Bubble */
 .ping-card {
     background: rgba(255, 255, 255, 0.03);
     border-left: 3px solid var(--accent);
@@ -543,6 +542,93 @@ body {
     color: #777;
     white-space: nowrap;
     margin-left: 8px;
+}
+
+/* Tasky Strategic UI & Floating Button */
+.tasky-floating-btn {
+    position: fixed;
+    bottom: 74px;
+    right: 18px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 30px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    box-shadow: 0 4px 18px rgba(0, 255, 178, 0.35);
+    cursor: pointer;
+    z-index: 40;
+    transition: transform 0.15s ease;
+}
+
+.tasky-floating-btn:active {
+    transform: scale(0.95);
+}
+
+.tasky-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--accent);
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.tasky-card.high-urgency {
+    border-left-color: #ff5555;
+}
+
+.tasky-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    margin-right: 8px;
+}
+
+.tasky-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.tasky-sub {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+.tasky-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.btn-task-done {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.btn-task-swap {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
 }
 
 /* Modals */
