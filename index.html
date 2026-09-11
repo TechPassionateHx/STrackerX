@@ -21,13 +21,17 @@
                 <span id="track-badge" class="badge-tag">STREAM</span>
             </div>
             <div class="header-right">
+                <!-- Theme Toggle Button -->
                 <button type="button" class="icon-btn" onclick="toggleTheme()" title="Toggle Interface Mode">
-                <button type="button" class="icon-btn" onclick="toggleModal('modal-help', true)" title="Help & Quick Guide">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-</button>
-
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
                 </button>
+
+                <!-- Helpbook Modal Trigger Button -->
+                <button type="button" class="icon-btn" onclick="toggleModal('modal-help', true)" title="Help & Quick Guide">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </button>
+
+                <!-- Profile Navigation Pill -->
                 <div class="user-pill" onclick="switchTab('vault')">
                     <div class="avatar" id="avatar-char">U</div>
                     <span id="header-handle">@user</span>
@@ -437,48 +441,48 @@
         </div>
     </div>
 
-    <!-- ENGINE SCRIPT -->
     <!-- MODAL: EASY HELPBOOK -->
-<div id="modal-help" class="modal-overlay" style="display: none;">
-    <div class="modal-box glass-panel help-modal-box">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div class="section-title" style="margin: 0; color: var(--accent, #00ffb2);">📖 QUICK GUIDE & HELPBOOK</div>
-            <button type="button" class="btn-ghost" onclick="toggleModal('modal-help', false)" style="padding: 2px 8px;">✕</button>
+    <div id="modal-help" class="modal-overlay" style="display: none;">
+        <div class="modal-box glass-panel help-modal-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div class="section-title" style="margin: 0; color: var(--accent, #00ffb2);">📖 QUICK GUIDE & HELPBOOK</div>
+                <button type="button" class="btn-ghost" onclick="toggleModal('modal-help', false)" style="padding: 2px 8px;">✕</button>
+            </div>
+            
+            <div class="help-scroll-content">
+                <p class="subtext" style="margin-bottom: 12px;">Welcome to STrackerX! Here is everything you need to know in simple words:</p>
+
+                <div class="help-item">
+                    <h4>🎯 1. Syllabus Matrix</h4>
+                    <p>Track your chapters step-by-step. Each milestone has a specific weight towards completion (solving DPPs and Modules gives more percentage than just reading notes!). Tap any milestone chip to mark it done or undo it.</p>
+                </div>
+
+                <div class="help-item">
+                    <h4>🤖 2. What is "Tasky"?</h4>
+                    <p>Tasky is your personal study coach. Instead of guessing what to study next, Tasky checks how many days have passed since you finished notes or exercises and tells you when a revision is due. It also makes sure you finish basics (like Vectors or GOC) before suggesting hard chapters.</p>
+                </div>
+
+                <div class="help-item">
+                    <h4>⏱️ 3. Focus Sprint & Streaks</h4>
+                    <p>Need deep focus? Launch a 25-minute Pomodoro sprint. Your daily focus streak only goes up when you successfully finish the whole 25-minute session without quitting early.</p>
+                </div>
+
+                <div class="help-item">
+                    <h4>🛡️ 4. Squad Rooms & Peers</h4>
+                    <p>Study live with your friends! Create or join a Squad Room using a room code (like <code>#SQUAD-1234</code>). You can see what chapters your squadmates just finished and send quick, zero-distraction status pings.</p>
+                </div>
+
+                <div class="help-item">
+                    <h4>🔒 5. Safe & Synced</h4>
+                    <p>Your work automatically saves to the cloud. You can also export a copy of your progress anytime in the <strong>Vault</strong> tab.</p>
+                </div>
+            </div>
+
+            <button type="button" class="btn-primary" style="width: 100%; margin-top: 12px;" onclick="toggleModal('modal-help', false)">GOT IT, LET'S STUDY!</button>
         </div>
-        
-        <div class="help-scroll-content">
-            <p class="subtext" style="margin-bottom: 12px;">Welcome to STrackerX! Here is everything you need to know in simple words:</p>
-
-            <div class="help-item">
-                <h4>🎯 1. Syllabus Matrix</h4>
-                <p>Track your chapters step-by-step. Each milestone has a specific weight towards completion (solving DPPs and Modules gives more percentage than just reading notes!). Tap any milestone chip to mark it done or undo it.</p>
-            </div>
-
-            <div class="help-item">
-                <h4>🤖 2. What is "Tasky"?</h4>
-                <p>Tasky is your personal study coach. Instead of guessing what to study next, Tasky checks how many days have passed since you finished notes or exercises and tells you when a revision is due. It also makes sure you finish basics (like Vectors or GOC) before suggesting hard chapters.</p>
-            </div>
-
-            <div class="help-item">
-                <h4>⏱️ 3. Focus Sprint & Streaks</h4>
-                <p>Need deep focus? Launch a 25-minute Pomodoro sprint. Your daily focus streak only goes up when you successfully finish the whole 25-minute session without quitting early.</p>
-            </div>
-
-            <div class="help-item">
-                <h4>🛡️ 4. Squad Rooms & Peers</h4>
-                <p>Study live with your friends! Create or join a Squad Room using a room code (like <code>#SQUAD-1234</code>). You can see what chapters your squadmates just finished and send quick, zero-distraction status pings.</p>
-            </div>
-
-            <div class="help-item">
-                <h4>🔒 5. Safe & Synced</h4>
-                <p>Your work automatically saves to the cloud. You can also export a copy of your progress anytime in the <strong>Vault</strong> tab.</p>
-            </div>
-        </div>
-
-        <button type="button" class="btn-primary" style="width: 100%; margin-top: 12px;" onclick="toggleModal('modal-help', false)">GOT IT, LET'S STUDY!</button>
     </div>
-</div>
 
+    <!-- ENGINE SCRIPT -->
     <script src="script.js"></script>
 </body>
 </html>
